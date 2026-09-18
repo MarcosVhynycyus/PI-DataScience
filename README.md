@@ -18,6 +18,9 @@ PI DataScience - Espaço MR | CHS
 │   └── README.md            # Documentação da infraestrutura Big Data (HDFS/Spark)
 ├── docs/
 │   └── arquitetura.md       # Arquitetura detalhada do projeto e fluxo de dados
+|   iaac/                    # Infraesrtutura como código
+|   └── cloud_init.cfg
+|   └── main.tf
 ├── monitoring/
 │   └── README.md            # Documentação dos serviços de monitoramento e métricas
 ├── pipeline/
