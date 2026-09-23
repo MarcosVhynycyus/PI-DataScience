@@ -62,7 +62,7 @@
         - /opt/bigdata/datawarehouse
 
 - name: Configurar VM de ETL
-  hosts: etl
+  hosts: pipeline
   become: true
   tasks:
     - name: Criar diretório da pipeline de ETL

@@ -1,7 +1,7 @@
 [bigdata]
 devops-1 ansible_host=${ips["devops-1"]}
 
-[etl]
+[pipeline]
 devops-2 ansible_host=${ips["devops-2"]}
 
 [monitoring]
