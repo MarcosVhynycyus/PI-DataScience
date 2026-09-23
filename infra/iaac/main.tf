@@ -25,10 +25,11 @@ resource "libvirt_volume" "ubuntu_base" {
 resource "libvirt_volume" "vm_disk" {
   count = local.vm_count
 
-  name           = "devops-${count.index + 1}.qcow2"
+  name           = "dev-ops-${count.index + 1}.qcow2"
   pool           = "default"
   base_volume_id = libvirt_volume.ubuntu_base.id
   format         = "qcow2"
+  size           = 10 * 1024 * 1024 * 1024
 }
 
 resource "libvirt_cloudinit_disk" "init" {
@@ -66,6 +67,13 @@ resource "libvirt_domain" "vm" {
     target_type = "serial"
     target_port = "0"
   }
+}
+
+resource "local_file" "ansible_inventory" {
+  content = templatefile("${path.module}/inventory.tpl", {
+    ips = { for vm in libvirt_domain.vm : vm.name => vm.network_interface[0].addresses[0] }
+  })
+  filename = "${path.module}/../ansible/inventory.ini"
 }
 
 output "ips" {

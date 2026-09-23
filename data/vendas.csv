@@ -1,0 +1,101 @@
+id_transacao,cliente,valor,categoria,timestamp
+c1ac6be1-fe1d-481d-b8ba-8656c163c641,Lara Costela,68.27,Automobilistico,2026-09-23T13:04:45.699862
+30e38217-5490-48f0-9c86-96c77a289c86,Elisa Machado,297.94,Vestuário,2026-09-23T13:04:45.699910
+b17cbb26-77ce-45af-802a-0d7704a4aa56,José Pedro Oliveira,547.19,Automobilistico,2026-09-23T13:04:45.699941
+722f67d3-79f6-4aa0-9820-c973d0e0ce46,Luísa Cardoso,49.87,Eletrodomesticos,2026-09-23T13:04:45.699966
+94969198-d3cd-4d1e-86de-99b6d936d85b,Maria Helena Mendonça,162.96,Automobilistico,2026-09-23T13:04:45.700022
+e869657e-8e96-432b-9d62-fc56ccc87a1e,Sr. Isaque Machado,666.16,Vestuário,2026-09-23T13:04:45.700080
+ca89260f-e57f-4388-b7b3-510718c32e31,João Gabriel Rodrigues,735.73,Eletrônicos,2026-09-23T13:04:45.700117
+85061abb-ce38-4572-9a86-8846348666d3,Bruno Vargas,26.63,Alimentos,2026-09-23T13:04:45.700148
+bc376039-517c-459f-b10d-9df7a9f9eebf,Vinicius Pacheco,816.83,Alimentos,2026-09-23T13:04:45.700176
+439ec8be-1ea3-4a5a-ad6b-ad1530a35c65,Isabel Gomes,372.33,Alimentos,2026-09-23T13:04:45.700198
+042b8450-5dfb-4c2e-adb7-a925edd8c641,Bernardo Sampaio,147.09,Automobilistico,2026-09-23T13:04:45.700220
+939afdaf-0fc2-4137-becd-f63dc5e71fde,Luan Vargas,760.17,Eletrônicos,2026-09-23T13:04:45.700243
+b97ab40b-f2af-47c4-b435-491b5b3d652c,Hadassa Costa,444.38,Eletrônicos,2026-09-23T13:04:45.700264
+17911079-8bb0-4496-a3b1-67590222f917,Lorena da Mota,330.99,Esportivo,2026-09-23T13:04:45.700286
+04dfb56f-30d2-474f-a522-ffbfd64bf9bf,Sophia Vargas,846.49,Eletrônicos,2026-09-23T13:04:45.700307
+fe907b75-12ff-4b4a-b907-ba15d10c4961,Bento Campos,60.18,Eletrônicos,2026-09-23T13:04:45.700327
+1bee6071-1dfa-4a42-b54d-43f1cf281818,Vitória Borges,585.52,Eletrodomesticos,2026-09-23T13:04:45.700377
+dcf1fd9f-b291-4598-9d20-aeffe57ab12a,Antony Nogueira,413.37,Eletrodomesticos,2026-09-23T13:04:45.700402
+7aa38e1a-6435-4fde-b099-1ef18fddfc87,Sr. Lucas Gabriel da Paz,291.13,Vestuário,2026-09-23T13:04:45.700450
+d414d5f5-0125-482c-ad0e-bb1dee175813,Nicolas Pereira,106.76,Alimentos,2026-09-23T13:04:45.700471
+6904a46e-3580-47d7-b299-07491e50c5f0,Lívia da Luz,472.91,Eletrodomesticos,2026-09-23T13:04:45.700491
+2077b841-e979-426a-b5c6-38d24915e09f,Ryan Barbosa,344.1,Eletrônicos,2026-09-23T13:04:45.700511
+8c1e289e-85ec-4236-9afa-9e40358b15cf,Mariah Farias,510.11,Alimentos,2026-09-23T13:04:45.700532
+48bdc565-4ce1-4266-92a5-f0a7edc51487,Carolina Araújo,290.7,Alimentos,2026-09-23T13:04:45.700552
+d4592ca2-fd88-4b3e-8326-cf78f9fce3a3,Caroline Nascimento,290.19,Eletrônicos,2026-09-23T13:04:45.700572
+01ad58a9-8e58-43ec-bffa-08930f254b20,Ana Laura Porto,711.46,Automobilistico,2026-09-23T13:04:45.700592
+880354b3-022a-40cc-81c0-fa87ee1a495f,Dra. Larissa Sousa,465.6,Vestuário,2026-09-23T13:04:45.700629
+959f2d22-ee31-4093-9a9a-f623a0f9fce2,Dra. Isadora Castro,174.11,Eletrônicos,2026-09-23T13:04:45.700661
+68bee4ab-4fcd-4c7a-9929-8b428ea3b2de,Benjamin Abreu,365.33,Automobilistico,2026-09-23T13:04:45.700683
+6e8fa90e-1db1-413f-adae-084bae0a1928,Allana Guerra,750.51,Vestuário,2026-09-23T13:04:45.700703
+554d6f0f-deff-4654-aeca-c387227cedd0,Juan Cirino,487.83,Eletrodomesticos,2026-09-23T13:04:45.700723
+af449ccd-ec20-40fc-adbc-28553f5d1521,Henry Montenegro,247.35,Eletrônicos,2026-09-23T13:04:45.700742
+c4ea399c-035c-489d-a0ed-9b182c48e6f6,Léo Mendonça,569.82,Esportivo,2026-09-23T13:04:45.700762
+1f374f81-8abe-46c7-b315-41ef57880053,Davi Luiz da Rosa,188.58,Automobilistico,2026-09-23T13:04:45.700820
+3d38e8dc-f9fd-4c56-94e6-3c2c040c875e,Luiz Felipe Rodrigues,546.15,Esportivo,2026-09-23T13:04:45.700842
+d0743565-7924-4f48-a57d-55d466eef294,João Lucas Costela,198.63,Esportivo,2026-09-23T13:04:45.700863
+b8664bc0-504c-4fbc-845f-721f715a05d1,Maria Vitória Santos,226.97,Esportivo,2026-09-23T13:04:45.700883
+aa3a1740-9b26-4c16-998d-6650b62f1305,Cauã Fonseca,773.72,Automobilistico,2026-09-23T13:04:45.700903
+5f7e7bb1-42aa-4ac2-9b3e-3329051f1dc0,Vitor Brito,494.63,Vestuário,2026-09-23T13:04:45.700924
+5d16c66e-7b78-477f-812c-9a144301ff21,Caio Andrade,790.52,Automobilistico,2026-09-23T13:04:45.700963
+03dc71df-3750-4164-8a18-c6a2627fe611,João Felipe Vargas,427.28,Esportivo,2026-09-23T13:04:45.701008
+20d18f50-7560-4daf-8672-b2feca5112b6,Ravy Moura,629.69,Automobilistico,2026-09-23T13:04:45.701032
+f978e0f2-8869-451d-a11c-8dbf63b0194c,Hellena da Paz,485.53,Vestuário,2026-09-23T13:04:45.701051
+3b72ee06-3e85-483a-bcf5-afb937d7450c,Cauã Jesus,549.21,Esportivo,2026-09-23T13:04:45.701069
+ee786000-7c7b-4f01-bd84-23965af9b3eb,Srta. Ana Beatriz Casa Grande,529.73,Automobilistico,2026-09-23T13:04:45.701091
+923522b2-89ba-455c-b8a1-a9728d2d4dca,Dr. Liam da Rosa,632.95,Eletrônicos,2026-09-23T13:04:45.701113
+f9dbbc5f-3bab-4009-be4f-de5cff852142,Joana Siqueira,452.76,Eletrodomesticos,2026-09-23T13:04:45.701131
+f21a1ea9-342b-41e7-abf3-f2f1d62d8aaf,Heitor da Rocha,177.93,Esportivo,2026-09-23T13:04:45.701185
+ba942d7a-fce3-4a06-97a4-babce33291d9,Bruno Pimenta,284.43,Eletrodomesticos,2026-09-23T13:04:45.701207
+69f6a6aa-bb59-461c-97e8-9352ce533089,Sr. Kaique Ferreira,747.64,Eletrodomesticos,2026-09-23T13:04:45.701252
+ecedbfc9-b30f-4be8-b627-8ce5ea3ef301,Allana da Rocha,382.68,Eletrodomesticos,2026-09-23T13:04:45.701276
+7a6f3b9d-8284-4939-a647-5ca1d40d5e57,Matheus Cunha,543.6,Esportivo,2026-09-23T13:04:45.701297
+0dd7ebfe-5457-4e0f-8449-9f86014f9e32,José Pedro da Mata,849.08,Eletrônicos,2026-09-23T13:04:45.701318
+d966da92-5186-4f93-a4a6-2e8a68b14a5d,Luan Araújo,603.68,Eletrônicos,2026-09-23T13:04:45.701341
+e3c47f4e-9c7a-4fe0-bfb2-961f6537c357,Ísis Cassiano,266.44,Eletrodomesticos,2026-09-23T13:04:45.701363
+09cb6b76-3368-4583-a0e4-b4934c311f2d,Maria Flor Ribeiro,642.13,Automobilistico,2026-09-23T13:04:45.701384
+2899858e-cfed-4c72-8b2b-dfd948826b61,Lívia Silveira,830.66,Vestuário,2026-09-23T13:04:45.701420
+a6da715e-5a58-47fb-8ee3-76405c5ee8d1,Bella Pereira,39.89,Eletrônicos,2026-09-23T13:04:45.701448
+6494e842-a827-4566-97f7-3a8ce3da830c,Dr. Bernardo Nogueira,339.27,Eletrodomesticos,2026-09-23T13:04:45.701483
+2fd8b219-902f-496c-903d-29c85927c58e,Luiz Otávio Moreira,457.45,Alimentos,2026-09-23T13:04:45.701504
+05cd8b21-9c0a-4db6-972d-79e18bc8570c,Olivia das Neves,405.58,Eletrodomesticos,2026-09-23T13:04:45.701542
+519c331e-1d3d-424e-9ba7-debd84c9100c,Giovanna Azevedo,384.06,Eletrônicos,2026-09-23T13:04:45.701564
+ddf8a565-063b-433b-b365-757f7898d1b1,Dr. Erick Moura,473.59,Esportivo,2026-09-23T13:04:45.701600
+ee4884ee-6365-47f5-9b80-f45d0e66cbf0,Guilherme Teixeira,508.4,Automobilistico,2026-09-23T13:04:45.701626
+3a72fce5-8d58-48ea-a84f-de46ebae22a6,Letícia da Cunha,680.26,Alimentos,2026-09-23T13:04:45.701647
+be6e62ba-7855-4ff0-b1b1-72109634be09,Jade Farias,213.58,Eletrodomesticos,2026-09-23T13:04:45.701667
+d45c29a2-01ee-4bf6-a5cd-c271e1fa0e23,Leandro Albuquerque,747.96,Alimentos,2026-09-23T13:04:45.701687
+45337cfa-4be2-40e0-ba03-b8c76ac64187,Ana Liz Souza,546.55,Eletrônicos,2026-09-23T13:04:45.701707
+3a95f598-b696-4a86-8a33-178479c5e595,Dr. Gabriel Câmara,446.62,Eletrodomesticos,2026-09-23T13:04:45.701731
+bdb30535-c3fc-4004-a12d-6212c9ff4bb8,Beatriz da Cunha,515.65,Esportivo,2026-09-23T13:04:45.701751
+e9c1f1af-3781-427c-97f1-c047ee83b609,Pedro Nascimento,244.24,Esportivo,2026-09-23T13:04:45.701771
+3219952c-3120-4a4c-86c2-cf958a9aac28,José da Costa,848.94,Automobilistico,2026-09-23T13:04:45.701828
+9f272297-223d-497a-bea4-92e5d1402776,Marina Ferreira,526.89,Eletrodomesticos,2026-09-23T13:04:45.701851
+55caa73d-3492-43e0-840a-450d9799d787,Srta. Zoe Andrade,156.42,Eletrodomesticos,2026-09-23T13:04:45.701874
+364d88cc-6121-4feb-8a3c-cca9972fb740,Sra. Olivia Alves,698.27,Vestuário,2026-09-23T13:04:45.701897
+f1b31fdb-3837-4241-81b2-669a7ea9e05f,Liz Silveira,323.37,Alimentos,2026-09-23T13:04:45.701916
+aa3d234e-ac2a-41de-8ef6-51824bdcc2bd,Ísis da Rocha,107.89,Vestuário,2026-09-23T13:04:45.701936
+3efc7890-3403-44dc-9ec7-4f0344c32d7a,Mariah Guerra,184.74,Eletrodomesticos,2026-09-23T13:04:45.701956
+19093fdc-9b66-4eff-a842-20ff1f070944,Benicio Cavalcanti,131.01,Eletrônicos,2026-09-23T13:04:45.701976
+bd057281-9edc-44d0-a60f-aa27c1f2f0fc,Zoe Silveira,60.39,Alimentos,2026-09-23T13:04:45.701995
+5dd6b035-b636-42e4-8502-fdef37114d30,Ana Carolina Novais,275.59,Eletrônicos,2026-09-23T13:04:45.702014
+6c5c1fe0-fa5c-4a93-ba60-62b97f067fda,Dom Pacheco,401.39,Eletrônicos,2026-09-23T13:04:45.702051
+10177685-5d42-4151-a136-03cc3e37bebc,Dr. Lucas Cirino,318.43,Esportivo,2026-09-23T13:04:45.702075
+64ca77cf-3e07-4c3d-adc2-eb03b6e27334,Nathan Silva,735.5,Alimentos,2026-09-23T13:04:45.702110
+b2221883-2f62-4c65-9cce-ee1010600cfe,Lorena Cavalcanti,351.94,Vestuário,2026-09-23T13:04:45.702164
+fff80bd6-dd09-4b06-a8bb-c936dab09e56,Luiz Henrique Cavalcante,703.57,Esportivo,2026-09-23T13:04:45.702217
+c1815b13-07f0-4810-997a-3ff0ec038006,Srta. Hellena Fogaça,762.98,Esportivo,2026-09-23T13:04:45.702243
+6290f269-1889-4aec-8b4f-c28ae76bf209,Mariana Cavalcanti,431.56,Eletrodomesticos,2026-09-23T13:04:45.702264
+ab55dcdb-84ed-4d27-bffc-afc8b7b03f16,Stephany Rodrigues,321.81,Vestuário,2026-09-23T13:04:45.702285
+bf53d4b9-f779-4376-8a97-95818354e1c5,Maria Luísa Ribeiro,88.49,Esportivo,2026-09-23T13:04:45.702307
+a9e5d138-062f-4a69-922a-61381d2c1f51,Davi Vasconcelos,134.68,Eletrônicos,2026-09-23T13:04:45.702328
+be778a2b-1bf2-4a56-9636-f59e165288a7,Ana Laura Fogaça,574.72,Eletrônicos,2026-09-23T13:04:45.702350
+cf53a4cb-1e60-44b0-a104-2a0a4ccaa67c,Sophie da Rosa,145.18,Alimentos,2026-09-23T13:04:45.702371
+8443361f-1115-4ed9-aa09-b0d050e2ebff,Sara Fogaça,618.27,Esportivo,2026-09-23T13:04:45.702393
+0705900c-953a-4e4c-8d8e-5493f9aaba1b,Théo da Rocha,282.57,Automobilistico,2026-09-23T13:04:45.702415
+ed31a843-740f-403b-bda9-989c4dd9fcc0,Beatriz Barros,677.73,Vestuário,2026-09-23T13:04:45.702436
+1150cc10-9c6a-426d-946e-7b319c4b93ec,Luiz Gustavo Castro,640.93,Esportivo,2026-09-23T13:04:45.702457
+117e9237-399d-412a-98b4-d2f94f938bc3,Alícia Siqueira,120.53,Eletrônicos,2026-09-23T13:04:45.702489
+4765d1a0-78e4-400a-baf4-591a1d7d89c1,Antônio Freitas,650.34,Esportivo,2026-09-23T13:04:45.702510
+cbcd2e6e-707e-478d-84d5-2358081350b4,Guilherme Camargo,668.52,Eletrônicos,2026-09-23T13:04:45.702541
