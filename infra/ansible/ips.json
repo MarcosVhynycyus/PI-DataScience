@@ -1,0 +1,20 @@
+{
+  "ips": {
+    "sensitive": false,
+    "type": [
+      "object",
+      {
+        "devops-1": "string",
+        "devops-2": "string",
+        "devops-3": "string",
+        "devops-4": "string"
+      }
+    ],
+    "value": {
+      "devops-1": "192.168.122.135",
+      "devops-2": "192.168.122.200",
+      "devops-3": "192.168.122.224",
+      "devops-4": "192.168.122.100"
+    }
+  }
+}

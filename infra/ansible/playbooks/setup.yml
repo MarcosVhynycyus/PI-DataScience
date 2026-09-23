@@ -1,0 +1,79 @@
+---
+- name: Preparar todas as VMs (Docker)
+  hosts: all
+  become: true
+  tasks:
+    - name: Atualizar cache apt
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Instalar dependências
+      ansible.builtin.apt:
+        name: [ca-certificates, curl, gnupg]
+        state: present
+
+    - name: Criar diretório de chaves apt
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Adicionar chave GPG do Docker
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+
+    - name: Adicionar repositório Docker
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable"
+        filename: docker
+
+    - name: Instalar Docker Engine
+      ansible.builtin.apt:
+        name: [docker-ce, docker-ce-cli, containerd.io]
+        update_cache: true
+        state: present
+
+    - name: Adicionar marcos ao grupo docker
+      ansible.builtin.user:
+        name: marcos
+        groups: docker
+        append: true
+
+    - name: Garantir serviço Docker ativo
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+- name: Instalar K3s no master
+  hosts: masters
+  become: true
+  tasks:
+    - name: Instalar K3s server
+      ansible.builtin.shell: curl -sfL https://get.k3s.io | sh -
+      args: { creates: /usr/local/bin/k3s }
+
+    - name: Ler token do cluster
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_raw
+
+    - name: Guardar token como fato
+      ansible.builtin.set_fact:
+        k3s_token: "{{ k3s_token_raw['content'] | b64decode | trim }}"
+
+- name: Instalar K3s nos workers
+  hosts: workers
+  become: true
+  vars:
+    master_ip: "{{ hostvars[groups['masters'][0]]['ansible_host'] }}"
+    k3s_token: "{{ hostvars[groups['masters'][0]]['k3s_token'] }}"
+  tasks:
+    - name: Instalar K3s agent e conectar ao master
+      ansible.builtin.shell: >
+        curl -sfL https://get.k3s.io |
+        K3S_URL=https://{{ master_ip }}:6443
+        K3S_TOKEN={{ k3s_token }} sh -
+      args: { creates: /usr/local/bin/k3s-agent }
