@@ -1,16 +1,16 @@
 id_promocao,produto,categoria,tipo_desconto,desconto,data_inicio,data_fim,vendas_antes,vendas_durante
-1,Vestido Casual,Vestido,Valor Fixo,0.13,2026-03-09,2026-03-26,52,105
-2,Blusa X,Blusa,Valor Fixo,0.19,2026-03-20,2026-04-05,16,36
-3,Acessório Casual,Acessório,Valor Fixo,0.18,2026-03-15,2026-03-21,21,32
-4,Calça Social,Calça,Valor Fixo,0.18,2026-06-05,2026-06-18,47,74
-5,Bermuda Casual,Bermuda,Valor Fixo,0.12,2026-07-24,2026-08-11,45,112
-6,Jaqueta Slim,Jaqueta,Percentual,0.17,2026-06-04,2026-06-20,11,21
-7,Vestido Premium,Vestido,Percentual,0.25,2026-03-25,2026-03-30,48,81
-8,Camiseta Social,Camiseta,Valor Fixo,0.33,2026-04-15,2026-05-05,42,67
-9,Bermuda X,Bermuda,Percentual,0.11,2026-09-15,2026-09-28,18,42
-10,Calça Esporte,Calça,Valor Fixo,0.23,2026-05-20,2026-06-02,31,52
-11,Acessório Slim,Acessório,Percentual,0.11,2026-03-26,2026-04-07,30,50
-12,Calça Esporte,Calça,Percentual,0.12,2026-09-03,2026-09-13,53,127
-13,Blusa Social,Blusa,Valor Fixo,0.21,2026-04-06,2026-04-15,13,29
-14,Vestido Esporte,Vestido,Valor Fixo,0.17,2026-06-11,2026-06-25,31,65
-15,Jaqueta Casual,Jaqueta,Valor Fixo,0.26,2026-03-07,2026-03-16,35,56
+1,Camiseta Social,Camiseta,Valor Fixo,0.27,2026-04-05,2026-04-23,44,89
+2,Jaqueta Social,Jaqueta,Percentual,0.3,2026-04-09,2026-04-24,42,73
+3,Vestido Esporte,Vestido,Valor Fixo,0.3,2026-09-20,2026-10-06,59,124
+4,Calça Premium,Calça,Valor Fixo,0.13,2026-09-20,2026-10-05,27,49
+5,Acessório Casual,Acessório,Valor Fixo,0.26,2026-03-26,2026-04-14,22,49
+6,Blusa Básica,Blusa,Percentual,0.28,2026-06-11,2026-06-22,50,116
+7,Vestido Premium,Vestido,Valor Fixo,0.23,2026-04-09,2026-04-19,34,54
+8,Blusa X,Blusa,Percentual,0.11,2026-04-18,2026-05-02,57,136
+9,Camiseta Casual,Camiseta,Percentual,0.32,2026-07-21,2026-08-07,40,71
+10,Vestido X,Vestido,Valor Fixo,0.25,2026-07-20,2026-07-30,53,72
+11,Blusa Básica,Blusa,Valor Fixo,0.21,2026-03-07,2026-03-24,17,32
+12,Blusa Esporte,Blusa,Percentual,0.11,2026-09-07,2026-09-16,19,26
+13,Vestido Premium,Vestido,Valor Fixo,0.11,2026-07-10,2026-07-20,14,28
+14,Calça Básica,Calça,Valor Fixo,0.25,2026-06-01,2026-06-14,59,145
+15,Blusa Básica,Blusa,Percentual,0.16,2026-08-31,2026-09-10,47,95

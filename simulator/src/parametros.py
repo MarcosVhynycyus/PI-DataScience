@@ -11,5 +11,5 @@ def parse_args():
     p.add_argument("--taxa-erro", type=float, default=0.04,
                     help="fração de linhas afetadas por cada tipo de falha injetada (0 a 1)")
     p.add_argument("--seed", type=int, default=None, help="semente para reprodutibilidade")
-    p.add_argument("--output", type=str, default="./data", help="diretório de saída dos CSVs")
+    p.add_argument("--output", type=str, default="/opt/simulator/data", help="diretório de saída dos CSVs")
     return p.parse_args()
