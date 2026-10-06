@@ -103,3 +103,8 @@ Para compreender a fundo os aspectos conceituais e técnicos do projeto, consult
 
 ## 👥 Autores & Contribuintes
 Projeto Interdisciplinar em Data Science — **Espaço MR | CHS**.
+
+### 26001888 Juan Pablo Souza De Melo
+### 24001369 Marcos Vhynycyus Gomes da Silva
+### 24000605 Murilo Nogueira Avarino
+### 24000884 Paulo Henrique Teixeira
