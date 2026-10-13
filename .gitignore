@@ -1,1 +1,3 @@
 infra/iaac/*.img
+.venv
+.idea
