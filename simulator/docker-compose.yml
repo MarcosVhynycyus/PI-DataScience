@@ -1,0 +1,51 @@
+services:
+  # Banco de Dados SQL
+  db:
+    image: postgres:15-alpine
+    container_name: simulator_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: varejo_db
+    ports:
+      - "5432:5432" # Exposto para acesso de ETL/BigData se necessário
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Serviço da API Flask para envio dos dados
+  api:
+    build: .
+    container_name: simulator_api
+    restart: always
+    command: gunicorn --bind 0.0.0.0:5000 app:app --workers 2
+    ports:
+      - "5000:5000" # Exposto no host da VM Simulator
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/varejo_db
+    depends_on:
+      - db
+
+  # Serviço do Gerador Contínuo de Dados
+  generator:
+    build: .
+    container_name: simulator_generator
+    restart: always
+    command: python stream_generator.py --taxa-erro 0.04
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/varejo_db
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - db
+  
+  adminer:
+    image: adminer
+    container_name: simulator_adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:

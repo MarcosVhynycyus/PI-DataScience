@@ -4,7 +4,6 @@ import random
 import pandas as pd
 
 from quebras import amostra_indices, aplicar_em_amostra, data_aleatoria, duplicar_linhas, id_fk_quebrada, sujar_case, sujar_data_formato, sujar_encoding, sujar_espacos, sujar_numero_como_texto_brl
-
 fake = Faker("pt_BR")
 
 CIDADES = [
@@ -84,22 +83,35 @@ def gerar_estoque(n: int) -> pd.DataFrame:
 
 
 def gerar_vendas(n: int, clientes: pd.DataFrame, vendedores: pd.DataFrame,
-                  estoque: pd.DataFrame) -> pd.DataFrame:
+                  estoque: pd.DataFrame, id_inicio: int = 1) -> pd.DataFrame:
     linhas = []
     ids_cliente = clientes["id_cliente"].tolist()
     ids_vendedor = vendedores["id_vendedor"].tolist()
     produtos_idx = estoque.set_index("id_produto")
 
-    for id_venda in range(1, n + 1):
+    for i in range(n):
+        id_venda = id_inicio + i  
         produto_row = produtos_idx.loc[random.choice(produtos_idx.index)]
-        quantidade = random.randint(1, 4)
-        preco_unitario = produto_row["preco_unitario"]
+        
+        # Define a quantidade vendida antes dos cálculos
+        quantidade = random.randint(1, 5)
+
+        # --- TRATAMENTO PARA EVITAR ERROS COM PREÇO FORMATADO COMO TEXTO ---
+        preco_raw = produto_row["preco_unitario"]
+        if isinstance(preco_raw, str):
+            preco_limpo = preco_raw.replace("R$", "").replace(".", "").replace(",", ".").strip()
+            try:
+                preco_unitario = float(preco_limpo)
+            except ValueError:
+                preco_unitario = 50.0
+        else:
+            preco_unitario = float(preco_raw)
+        # -------------------------------------------------------------------
+
         desconto = round(preco_unitario * quantidade * random.choice([0, 0, 0, 0.05, 0.1, 0.15]), 2)
         valor_total = round(preco_unitario * quantidade - desconto, 2)
         data_venda = data_aleatoria(datetime(2026, 3, 1), HOJE)
 
-        # ~6% das vendas sem cliente identificado (venda avulsa / balcão),
-        # proporção compatível com a observada no vendas.csv original.
         id_cliente = random.choice(ids_cliente) if random.random() > 0.06 else None
 
         linhas.append({
@@ -123,14 +135,9 @@ def gerar_vendas(n: int, clientes: pd.DataFrame, vendedores: pd.DataFrame,
     return pd.DataFrame(linhas)
 
 
-def gerar_crediario(vendas: pd.DataFrame) -> pd.DataFrame:
-    """
-    Gera as parcelas de crediário a partir das vendas cuja forma de
-    pagamento é 'Crediário'. Mantém FK explícita para id_venda e id_cliente
-    -- reforçando o relacionamento entre tabelas pedido no enunciado.
-    """
+def gerar_crediario(vendas: pd.DataFrame, id_inicio_parcela: int = 1) -> pd.DataFrame:
     linhas = []
-    id_parcela = 1
+    id_parcela = id_inicio_parcela  # <--- ID sequencial continuo
     vendas_crediario = vendas[
         (vendas["forma_pagamento"] == "Crediário") & (vendas["id_cliente"].notna())
     ]
@@ -179,10 +186,11 @@ def gerar_crediario(vendas: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(linhas)
 
 
-def gerar_promocoes(n: int, estoque: pd.DataFrame) -> pd.DataFrame:
+def gerar_promocoes(n: int, estoque: pd.DataFrame, id_inicio_promocao: int = 1) -> pd.DataFrame:
     linhas = []
     amostra_produtos = estoque.sample(min(n, len(estoque)), replace=n > len(estoque))
-    for id_promocao, (_, produto_row) in enumerate(amostra_produtos.iterrows(), start=1):
+    for i, (_, produto_row) in enumerate(amostra_produtos.iterrows()):
+        id_promocao = id_inicio_promocao + i
         inicio = data_aleatoria(datetime(2026, 3, 1), HOJE)
         fim = inicio + timedelta(days=random.randint(5, 20))
         vendas_antes = random.randint(10, 60)
