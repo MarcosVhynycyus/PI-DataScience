@@ -1,8 +1,8 @@
 [monitoring]
-devops-1 ansible_host=${ips["devops-3"]}
+devops-1 ansible_host=${ips["devops-1"]}
 
 [simulator]
-devops-1 ansible_host=${ips["devops-4"]}
+devops-2 ansible_host=${ips["devops-2"]}
 
 [all:vars]
 ansible_user=marcos
