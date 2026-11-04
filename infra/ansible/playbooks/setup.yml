@@ -47,31 +47,6 @@
         state: started
         enabled: true
 
-- name: Configurar VM de Big Data
-  hosts: bigdata
-  become: true
-  tasks:
-    - name: Criar diretórios para datalake/datawarehouse
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        owner: marcos
-        mode: "0755"
-      loop:
-        - /opt/bigdata/datalake
-        - /opt/bigdata/datawarehouse
-
-- name: Configurar VM de ETL
-  hosts: pipeline
-  become: true
-  tasks:
-    - name: Criar diretório da pipeline de ETL
-      ansible.builtin.file:
-        path: /opt/etl
-        state: directory
-        owner: marcos
-        mode: "0755"
-
 - name: Configurar VM de Monitoramento
   hosts: monitoring
   become: true

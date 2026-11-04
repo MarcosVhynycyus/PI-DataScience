@@ -12,7 +12,7 @@ provider "libvirt" {
 }
 
 locals {
-  vm_count = 4 # Ajustado para os 4 nós da arquitetura da F.C.A.
+  vm_count = 2 
 }
 
 resource "libvirt_volume" "ubuntu_base" {

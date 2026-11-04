@@ -1,14 +1,8 @@
-[bigdata]
-devops-1 ansible_host=${ips["devops-1"]}
-
-[pipeline]
-devops-2 ansible_host=${ips["devops-2"]}
-
 [monitoring]
-devops-3 ansible_host=${ips["devops-3"]}
+devops-1 ansible_host=${ips["devops-3"]}
 
 [simulator]
-devops-4 ansible_host=${ips["devops-4"]}
+devops-1 ansible_host=${ips["devops-4"]}
 
 [all:vars]
 ansible_user=marcos
