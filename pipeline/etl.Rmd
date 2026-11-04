@@ -1,0 +1,266 @@
+```{r}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, lubridate, scales, knitr, janitor)
+
+# Criar diretório de saída para os dados tratados se não existir
+if (!dir.exists("./clean_data")) {
+  dir.create("./clean_data", recursive = TRUE)
+}
+```
+
+```{r}
+clientes_raw   <- read.csv("./data/clientes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+crediario_raw  <- read.csv("./data/crediario.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+estoque_raw    <- read.csv("./data/estoque.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+promocoes_raw  <- read.csv("./data/promocoes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+vendas_raw     <- read.csv("./data/vendas.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+vendedores_raw <- read.csv("./data/vendedores.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+```
+
+```{r}
+diagnosticar_dataset <- function(df, nome_df) {
+  cat("\n==================================================\n")
+  cat(" DIAGNÓSTICO:", nome_df, "\n")
+  cat("==================================================\n")
+  cat("Dimensões:", nrow(df), "linhas x", ncol(df), "colunas\n")
+  cat("Registros duplicados totais:", sum(duplicated(df)), "\n")
+  cat("\nValores Nulos por Coluna:\n")
+  print(colSums(is.na(df) | df == "" | df == "null"))
+}
+
+diagnosticar_dataset(clientes_raw, "Clientes Raw")
+diagnosticar_dataset(crediario_raw, "Crediário Raw")
+diagnosticar_dataset(estoque_raw, "Estoque Raw")
+diagnosticar_dataset(vendas_raw, "Vendas Raw")
+```
+
+```{r}
+limpar_moeda <- function(x) {
+  if (is.numeric(x)) return(x)
+  x %>%
+    as.character() %>%
+    str_replace_all("R\\$", "") %>%
+    str_replace_all("\\s", "") %>%
+    str_replace_all("\\.", "") %>%
+    str_replace_all(",", ".") %>%
+    as.numeric()
+}
+
+# Função para parsing flexível de datas (DD/MM/YYYY ou YYYY-MM-DD)
+padronizar_data <- function(x) {
+  if (inherits(x, "Date")) return(x)
+  as.Date(parse_date_time(x, orders = c("Ymd", "dmY", "Ymd HMS", "dmY HMS")))
+}
+```
+
+```{r}
+clientes_clean <- clientes_raw %>%
+  clean_names() %>%
+  distinct(id_cliente, .keep_all = TRUE) %>% # Elimina duplicatas de ID
+  mutate(
+    # Correção de Encoding e Padronização de Cidades
+    cidade = str_trim(cidade),
+    cidade = case_when(
+      str_detect(cidade, "Tamba|TambaÃº") ~ "Tambaú",
+      str_detect(cidade, "SÃ£o JoÃ£o|São João") ~ "São João da Boa Vista",
+      str_detect(cidade, "Agua|AguaÃ\xad") ~ "Aguaí",
+      str_detect(cidade, "SÃ£o JosÃ©|São José") ~ "São José do Rio Pardo",
+      TRUE ~ cidade
+    ),
+    # Padronização de Casing no Canal
+    canal_preferencial = str_to_title(str_trim(canal_preferencial)),
+    canal_preferencial = case_when(
+      str_detect(canal_preferencial, "(?i)física|fisica") ~ "Física",
+      str_detect(canal_preferencial, "(?i)online") ~ "Online",
+      TRUE ~ canal_preferencial
+    ),
+    # Tratamento de Outliers de Idade
+    idade = ifelse(idade < 15 | idade > 100, NA_integer_, as.integer(idade)),
+    data_cadastro = padronizar_data(data_cadastro)
+  )
+
+# 5.2 Estoque
+estoque_clean <- estoque_raw %>%
+  clean_names() %>%
+  distinct(id_produto, .keep_all = TRUE) %>%
+  mutate(
+    categoria = str_to_title(str_trim(categoria)),
+    produto = str_trim(produto),
+    cor = str_to_title(str_trim(cor)),
+    tamanho = str_to_upper(str_trim(tamanho)),
+    tamanho = ifelse(tamanho %in% c("P", "M", "G", "GG"), tamanho, NA_character_), # Invalida tamanhos inconsistentes (ex: XXXG)
+    preco_unitario = limpar_moeda(preco_unitario),
+    data_entrada   = padronizar_data(data_entrada),
+    ultima_venda   = padronizar_data(ultima_venda),
+    
+    # Cálculo de Variáveis Derivadas e Auditoria
+    calc_estoque   = quantidade_entrada - quantidade_saida,
+    divergencia_fisico_sistema = estoque_atual != estoque_fisico,
+    status_estoque = case_when(
+      estoque_fisico < estoque_minimo ~ "Ruptura / Abaixo do Mínimo",
+      estoque_fisico > estoque_maximo ~ "Excesso / Overstock",
+      TRUE ~ "Ideal"
+    )
+  )
+
+# 5.3 Vendas
+vendas_clean <- vendas_raw %>%
+  clean_names() %>%
+  distinct(id_venda, .keep_all = TRUE) %>% # Elimina vendas duplicadas
+  filter(quantidade > 0) %>%              # Remove transações inconsistentes/negativas
+  mutate(
+    categoria = str_to_title(str_trim(categoria)),
+    produto = str_trim(produto),
+    cor = str_to_title(str_trim(cor)),
+    tamanho = str_to_upper(str_trim(tamanho)),
+    preco_unitario = limpar_moeda(preco_unitario),
+    valor_total_bruto = quantidade * preco_unitario,
+    desconto = ifelse(desconto < 0 | desconto > valor_total_bruto, 0, desconto), # Invalida descontos irreais
+    valor_total_calculado = valor_total_bruto - desconto,
+    
+    data_venda = padronizar_data(data_venda),
+    mes_ano    = floor_date(data_venda, "month"),
+    
+    forma_pagamento = str_to_title(str_trim(forma_pagamento)),
+    forma_pagamento = case_when(
+      str_detect(forma_pagamento, "(?i)crédito|credito") ~ "Cartão de Crédito",
+      str_detect(forma_pagamento, "(?i)débito|debito")   ~ "Cartão de Débito",
+      str_detect(forma_pagamento, "(?i)pix")             ~ "PIX",
+      str_detect(forma_pagamento, "(?i)crediário|crediario") ~ "Crediário",
+      str_detect(forma_pagamento, "(?i)dinheiro")        ~ "Dinheiro",
+      TRUE ~ forma_pagamento
+    ),
+    canal = str_to_title(str_trim(canal)),
+    id_cliente = as.integer(id_cliente)
+  )
+
+# 5.4 Crediário
+crediario_clean <- crediario_raw %>%
+  clean_names() %>%
+  distinct(id_parcela, .keep_all = TRUE) %>%
+  mutate(
+    status = str_to_title(str_trim(status)),
+    status = case_when(
+      status %in% c("Pago", "PAGO", "pago") ~ "Pago",
+      status %in% c("Em Aberto", "Em aberto", "EM ABERTO", "em aberto") ~ "Em Aberto",
+      status %in% c("Atrasado", "ATRASADO", "atrasado") ~ "Atrasado",
+      TRUE ~ status
+    ),
+    data_vencimento = padronizar_data(data_vencimento),
+    data_pagamento  = padronizar_data(data_pagamento),
+    # Ajusta coerência entre status e valores abertos
+    valor_em_aberto = ifelse(status == "Pago", 0, valor_em_aberto)
+  )
+
+# 5.5 Promoções
+promocoes_clean <- promocoes_raw %>%
+  clean_names() %>%
+  distinct(id_promocao, .keep_all = TRUE) %>%
+  mutate(
+    produto = str_trim(produto),
+    categoria = str_to_title(str_trim(categoria)),
+    tipo_desconto = str_to_title(str_trim(tipo_desconto)),
+    data_inicio = padronizar_data(data_inicio),
+    data_fim = padronizar_data(data_fim),
+    lift_vendas_pct = round(((vendas_durante - vendas_antes) / vendas_antes) * 100, 2)
+  )
+
+# 5.6 Vendedores
+vendedores_clean <- vendedores_raw %>%
+  clean_names() %>%
+  distinct(id_vendedor, .keep_all = TRUE) %>%
+  mutate(
+    nome = str_trim(str_remove_all(nome, "(?i)^(Sr\\.|Sra\\.)\\s*")), # Remove títulos para padronizar nomes
+    cidade_loja = str_trim(cidade_loja),
+    data_contratacao = padronizar_data(data_contratacao)
+  )
+
+```
+
+```{r}
+write.csv(clientes_clean,   "./clean_data/clientes_clean.csv",   row.names = FALSE)
+write.csv(estoque_clean,    "./clean_data/estoque_clean.csv",    row.names = FALSE)
+write.csv(vendas_clean,     "./clean_data/vendas_clean.csv",     row.names = FALSE)
+write.csv(crediario_clean,  "./clean_data/crediario_clean.csv",  row.names = FALSE)
+write.csv(promocoes_clean,  "./clean_data/promocoes_clean.csv",  row.names = FALSE)
+write.csv(vendedores_clean, "./clean_data/vendedores_clean.csv", row.names = FALSE)
+```
+
+```{r}
+tb_canal <- vendas_clean %>%
+  group_by(canal) %>%
+  summarise(
+    Transacoes = n(),
+    Pecas_Vendidas = sum(quantidade, na.rm = TRUE),
+    Faturamento_R = sum(valor_total_calculado, na.rm = TRUE),
+    Ticket_Medio_R = mean(valor_total_calculado, na.rm = TRUE)
+  )
+
+print("--- VISÃO POR CANAL DE VENDA ---")
+print(knitr::kable(tb_canal, digits = 2))
+
+# Tabela 2: Resumo de Desempenho por Categoria de Produto
+tb_categoria <- vendas_clean %>%
+  group_by(categoria) %>%
+  summarise(
+    Transacoes = n(),
+    Quantidade = sum(quantidade, na.rm = TRUE),
+    Faturamento_R = sum(valor_total_calculado, na.rm = TRUE),
+    Desconto_Total_R = sum(desconto, na.rm = TRUE),
+    Preco_Medio_R = mean(preco_unitario, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Faturamento_R))
+
+print("--- PERFORMANCE POR CATEGORIA ---")
+print(knitr::kable(tb_categoria, digits = 2))
+```
+
+```{r}
+tb_crediario <- crediario_clean %>%
+  group_by(status) %>%
+  summarise(
+    Qtd_Parcelas = n(),
+    Valor_Total_R = sum(valor_parcela, na.rm = TRUE),
+    Valor_Em_Aberto_R = sum(valor_em_aberto, na.rm = TRUE),
+    Dias_Atraso_Medio = mean(dias_atraso, na.rm = TRUE)
+  )
+
+print("--- SITUAÇÃO DO CREDIÁRIO ---")
+print(knitr::kable(tb_crediario, digits = 2))
+```
+
+```{r}
+g1 <- vendas_clean %>% 
+  group_by(mes_ano) %>% 
+  summarise(Faturamento = sum(valor_total_calculado, na.rm = TRUE)) %>% 
+  ggplot(aes(x = mes_ano, y = Faturamento)) +
+  geom_line(color = "#2c3e50", size = 1.2) +
+  geom_point(color = "#e74c3c", size = 3) +
+  scale_y_continuous(labels = dollar_format(prefix = "R$ ", big.mark = ".", decimal.mark = ",")) +
+  scale_x_date(date_labels = "%b/%Y", date_breaks = "1 month") +
+  theme_minimal() +
+  labs(title = "Evolução do Faturamento Mensal", x = "Mês", y = "Faturamento Total")
+
+print(g1)
+```
+
+
+```{r}
+g2 <- promocoes_clean %>%
+  pivot_longer(cols = c(vendas_antes, vendas_durante), names_to = "Periodo", values_to = "Volume") %>%
+  mutate(Periodo = ifelse(Periodo == "vendas_antes", "Antes da Promoção", "Durante a Promoção")) %>%
+  ggplot(aes(x = reorder(produto, Volume), y = Volume, fill = Periodo)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  coord_flip() +
+  theme_minimal() +
+  scale_fill_manual(values = c("#95a5a6", "#2ecc71")) +
+  labs(title = "Efeito Promocional por Produto", x = "Produto", y = "Unidades Vendidas", fill = "Período")
+
+print(g2)
+```
+
+
+
+
+
+
