@@ -1,21 +1,50 @@
-# 1. CARREGAMENTO DE BIBLIOTECAS E DADOS ---------------------------------------
+# ==============================================================================
+# PIPELINE DE DIAGNÓSTICO, LIMPEZA E TRANSFORMAÇÃO DE DADOS (R)
+# ==============================================================================
+
+# 1. SETUP E CARREGAMENTO DE PACOTES ------------------------------------------
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, lubridate, scales, knitr)
+pacman::p_load(tidyverse, lubridate, scales, knitr, janitor)
 
-# Leitura dos arquivos CSV
-clientes   <- read.csv("../simulator/src/data/clientes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-crediario  <- read.csv("../simulator/src/data/crediario.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-estoque    <- read.csv("../simulator/src/data/estoque.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-promocoes  <- read.csv("../simulator/src/data/promocoes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-vendas     <- read.csv("../simulator/src/data/vendas.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-vendedores <- read.csv("../simulator/src/data/vendedores.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+# Criar diretório de saída para os dados tratados se não existir
+if (!dir.exists("./clean_data")) {
+  dir.create("./clean_data", recursive = TRUE)
+}
 
-# 2. TRATATIVA E HIGIENIZAÇÃO DOS DADOS ----------------------------------------
+# 2. INGESTÃO E PRESERVAÇÃO DOS DADOS BRUTOS -----------------------------------
+# Mantemos os dados brutos intactos com o sufixo _raw
 
-# Função auxiliar para limpeza de colunas monetárias
+clientes_raw   <- read.csv("./data/clientes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+crediario_raw  <- read.csv("./data/crediario.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+estoque_raw    <- read.csv("./data/estoque.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+promocoes_raw  <- read.csv("./data/promocoes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+vendas_raw     <- read.csv("./data/vendas.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+vendedores_raw <- read.csv("./data/vendedores.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
+
+# 3. DIAGNÓSTICO PRELIMINAR DE QUALIDADE DOS DADOS -----------------------------
+diagnosticar_dataset <- function(df, nome_df) {
+  cat("\n==================================================\n")
+  cat(" DIAGNÓSTICO:", nome_df, "\n")
+  cat("==================================================\n")
+  cat("Dimensões:", nrow(df), "linhas x", ncol(df), "colunas\n")
+  cat("Registros duplicados totais:", sum(duplicated(df)), "\n")
+  cat("\nValores Nulos por Coluna:\n")
+  print(colSums(is.na(df) | df == "" | df == "null"))
+}
+
+diagnosticar_dataset(clientes_raw, "Clientes Raw")
+diagnosticar_dataset(crediario_raw, "Crediário Raw")
+diagnosticar_dataset(estoque_raw, "Estoque Raw")
+diagnosticar_dataset(vendas_raw, "Vendas Raw")
+
+
+# 4. FUNÇÕES AUXILIARES DE TRATAMENTO -----------------------------------------
+
+# Função para limpeza e conversão de valores monetários para Numeric
 limpar_moeda <- function(x) {
   if (is.numeric(x)) return(x)
   x %>%
+    as.character() %>%
     str_replace_all("R\\$", "") %>%
     str_replace_all("\\s", "") %>%
     str_replace_all("\\.", "") %>%
@@ -23,29 +52,58 @@ limpar_moeda <- function(x) {
     as.numeric()
 }
 
-2.1 Tratativa do Dataset de Clientes
-clientes_clean <- clientes %>%
-  distinct(id_cliente, .keep_all = TRUE) %>%
+# Função para parsing flexível de datas (DD/MM/YYYY ou YYYY-MM-DD)
+padronizar_data <- function(x) {
+  if (inherits(x, "Date")) return(x)
+  as.Date(parse_date_time(x, orders = c("Ymd", "dmY", "Ymd HMS", "dmY HMS")))
+}
+
+
+# 5. PIPELINE DE LIMPEZA E TRANSFORMAÇÃO POR DATASET ---------------------------
+
+# 5.1 Clientes
+clientes_clean <- clientes_raw %>%
+  clean_names() %>%
+  distinct(id_cliente, .keep_all = TRUE) %>% # Elimina duplicatas de ID
   mutate(
+    # Correção de Encoding e Padronização de Cidades
+    cidade = str_trim(cidade),
     cidade = case_when(
-      str_detect(cidade, "Tamba") ~ "Tambaú",
+      str_detect(cidade, "Tamba|TambaÃº") ~ "Tambaú",
       str_detect(cidade, "SÃ£o JoÃ£o|São João") ~ "São João da Boa Vista",
-      str_detect(cidade, "Agua") ~ "Aguaí",
+      str_detect(cidade, "Agua|AguaÃ\xad") ~ "Aguaí",
+      str_detect(cidade, "SÃ£o JosÃ©|São José") ~ "São José do Rio Pardo",
       TRUE ~ cidade
     ),
+    # Padronização de Casing no Canal
     canal_preferencial = str_to_title(str_trim(canal_preferencial)),
-    idade = ifelse(idade < 15 | idade > 100, NA, idade), # Remoção de outliers/erros
-    data_cadastro = as.Date(data_cadastro)
+    canal_preferencial = case_when(
+      str_detect(canal_preferencial, "(?i)física|fisica") ~ "Física",
+      str_detect(canal_preferencial, "(?i)online") ~ "Online",
+      TRUE ~ canal_preferencial
+    ),
+    # Tratamento de Outliers de Idade
+    idade = ifelse(idade < 15 | idade > 100, NA_integer_, as.integer(idade)),
+    data_cadastro = padronizar_data(data_cadastro)
   )
 
-# 2.2 Tratativa do Dataset de Estoque
-estoque_clean <- estoque %>%
+# 5.2 Estoque
+estoque_clean <- estoque_raw %>%
+  clean_names() %>%
+  distinct(id_produto, .keep_all = TRUE) %>%
   mutate(
+    categoria = str_to_title(str_trim(categoria)),
+    produto = str_trim(produto),
+    cor = str_to_title(str_trim(cor)),
+    tamanho = str_to_upper(str_trim(tamanho)),
+    tamanho = ifelse(tamanho %in% c("P", "M", "G", "GG"), tamanho, NA_character_), # Invalida tamanhos inconsistentes (ex: XXXG)
     preco_unitario = limpar_moeda(preco_unitario),
-    data_entrada   = as.Date(data_entrada),
-    ultima_venda   = as.Date(ultima_venda),
+    data_entrada   = padronizar_data(data_entrada),
+    ultima_venda   = padronizar_data(ultima_venda),
+    
+    # Cálculo de Variáveis Derivadas e Auditoria
     calc_estoque   = quantidade_entrada - quantidade_saida,
-    divergencia_fisico_atual = estoque_atual != estoque_fisico,
+    divergencia_fisico_sistema = estoque_atual != estoque_fisico,
     status_estoque = case_when(
       estoque_fisico < estoque_minimo ~ "Ruptura / Abaixo do Mínimo",
       estoque_fisico > estoque_maximo ~ "Excesso / Overstock",
@@ -53,51 +111,98 @@ estoque_clean <- estoque %>%
     )
   )
 
-# 2.3 Tratativa do Dataset de Vendas
-vendas_clean <- vendas %>%
-  distinct(id_venda, .keep_all = TRUE) %>% # Remoção de vendas duplicadas
-  filter(quantidade > 0) %>%              # Invalidação de quantidades nulas/negativas
+# 5.3 Vendas
+vendas_clean <- vendas_raw %>%
+  clean_names() %>%
+  distinct(id_venda, .keep_all = TRUE) %>% # Elimina vendas duplicadas
+  filter(quantidade > 0) %>%              # Remove transações inconsistentes/negativas
   mutate(
+    categoria = str_to_title(str_trim(categoria)),
+    produto = str_trim(produto),
+    cor = str_to_title(str_trim(cor)),
+    tamanho = str_to_upper(str_trim(tamanho)),
     preco_unitario = limpar_moeda(preco_unitario),
-    valor_total_original = limpar_moeda(valor_total),
-    valor_total_calculado = (quantidade * preco_unitario) - desconto,
-    data_venda = parse_date_time(data_venda, orders = c("Ymd", "dmY", "dmy")),
-    data_venda = as.Date(data_venda),
+    valor_total_bruto = quantidade * preco_unitario,
+    desconto = ifelse(desconto < 0 | desconto > valor_total_bruto, 0, desconto), # Invalida descontos irreais
+    valor_total_calculado = valor_total_bruto - desconto,
+    
+    data_venda = padronizar_data(data_venda),
     mes_ano    = floor_date(data_venda, "month"),
+    
     forma_pagamento = str_to_title(str_trim(forma_pagamento)),
     forma_pagamento = case_when(
-      str_detect(forma_pagamento, "Crédito|Credito") ~ "Cartão de Crédito",
-      str_detect(forma_pagamento, "Débito|Debito")   ~ "Cartão de Débito",
-      str_detect(forma_pagamento, "Pix|PIX")          ~ "PIX",
-      str_detect(forma_pagamento, "Crediário")       ~ "Crediário",
-      str_detect(forma_pagamento, "Dinheiro")        ~ "Dinheiro",
+      str_detect(forma_pagamento, "(?i)crédito|credito") ~ "Cartão de Crédito",
+      str_detect(forma_pagamento, "(?i)débito|debito")   ~ "Cartão de Débito",
+      str_detect(forma_pagamento, "(?i)pix")             ~ "PIX",
+      str_detect(forma_pagamento, "(?i)crediário|crediario") ~ "Crediário",
+      str_detect(forma_pagamento, "(?i)dinheiro")        ~ "Dinheiro",
       TRUE ~ forma_pagamento
-    )
+    ),
+    canal = str_to_title(str_trim(canal)),
+    id_cliente = as.integer(id_cliente)
   )
 
-# 2.4 Tratativa do Dataset de Crediário
-crediario_clean <- crediario %>%
+# 5.4 Crediário
+crediario_clean <- crediario_raw %>%
+  clean_names() %>%
+  distinct(id_parcela, .keep_all = TRUE) %>%
   mutate(
     status = str_to_title(str_trim(status)),
     status = case_when(
-      status %in% c("Pago", "pago", "PAGO") ~ "Pago",
+      status %in% c("Pago", "PAGO", "pago") ~ "Pago",
       status %in% c("Em Aberto", "Em aberto", "EM ABERTO", "em aberto") ~ "Em Aberto",
+      status %in% c("Atrasado", "ATRASADO", "atrasado") ~ "Atrasado",
       TRUE ~ status
     ),
-    data_vencimento = as.Date(data_vencimento),
-    data_pagamento  = as.Date(data_pagamento)
+    data_vencimento = padronizar_data(data_vencimento),
+    data_pagamento  = padronizar_data(data_pagamento),
+    # Ajusta coerência entre status e valores abertos
+    valor_em_aberto = ifelse(status == "Pago", 0, valor_em_aberto)
   )
 
-# 3. CONSTRUÇÃO DE TABELAS RESUMO (ANÁLISE PRELIMINAR) ------------------------
+# 5.5 Promoções
+promocoes_clean <- promocoes_raw %>%
+  clean_names() %>%
+  distinct(id_promocao, .keep_all = TRUE) %>%
+  mutate(
+    produto = str_trim(produto),
+    categoria = str_to_title(str_trim(categoria)),
+    tipo_desconto = str_to_title(str_trim(tipo_desconto)),
+    data_inicio = padronizar_data(data_inicio),
+    data_fim = padronizar_data(data_fim),
+    lift_vendas_pct = round(((vendas_durante - vendas_antes) / vendas_antes) * 100, 2)
+  )
+
+# 5.6 Vendedores
+vendedores_clean <- vendedores_raw %>%
+  clean_names() %>%
+  distinct(id_vendedor, .keep_all = TRUE) %>%
+  mutate(
+    nome = str_trim(str_remove_all(nome, "(?i)^(Sr\\.|Sra\\.)\\s*")), # Remove títulos para padronizar nomes
+    cidade_loja = str_trim(cidade_loja),
+    data_contratacao = padronizar_data(data_contratacao)
+  )
+
+
+# 6. SALVAMENTO DA VERSÃO TRATADA (CONTINUIDADE DO PIPELINE) -------------------
+write.csv(clientes_clean,   "./clean_data/clientes_clean.csv",   row.names = FALSE)
+write.csv(estoque_clean,    "./clean_data/estoque_clean.csv",    row.names = FALSE)
+write.csv(vendas_clean,     "./clean_data/vendas_clean.csv",     row.names = FALSE)
+write.csv(crediario_clean,  "./clean_data/crediario_clean.csv",  row.names = FALSE)
+write.csv(promocoes_clean,  "./clean_data/promocoes_clean.csv",  row.names = FALSE)
+write.csv(vendedores_clean, "./clean_data/vendedores_clean.csv", row.names = FALSE)
+
+
+# 7. VISÕES SUMARIZADAS E ANÁLISES EXPOSITIVAS ---------------------------------
 
 # Tabela 1: Resumo Geral do Faturamento por Canal
 tb_canal <- vendas_clean %>%
   group_by(canal) %>%
   summarise(
     Transacoes = n(),
-    Pecas_Vendidas = sum(quantidade),
-    Faturamento_R = sum(valor_total_calculado),
-    Ticket_Medio_R = mean(valor_total_calculado)
+    Pecas_Vendidas = sum(quantidade, na.rm = TRUE),
+    Faturamento_R = sum(valor_total_calculado, na.rm = TRUE),
+    Ticket_Medio_R = mean(valor_total_calculado, na.rm = TRUE)
   )
 
 print("--- VISÃO POR CANAL DE VENDA ---")
@@ -108,76 +213,48 @@ tb_categoria <- vendas_clean %>%
   group_by(categoria) %>%
   summarise(
     Transacoes = n(),
-    Quantidade = sum(quantidade),
-    Faturamento_R = sum(valor_total_calculado),
-    Desconto_Total_R = sum(desconto),
-    Preco_Medio_R = mean(preco_unitario)
+    Quantidade = sum(quantidade, na.rm = TRUE),
+    Faturamento_R = sum(valor_total_calculado, na.rm = TRUE),
+    Desconto_Total_R = sum(desconto, na.rm = TRUE),
+    Preco_Medio_R = mean(preco_unitario, na.rm = TRUE)
   ) %>%
   arrange(desc(Faturamento_R))
 
 print("--- PERFORMANCE POR CATEGORIA ---")
 print(knitr::kable(tb_categoria, digits = 2))
 
-# Tabela 3: Inadimplência e Situação do Crediário
+# Tabela 3: Diagnóstico de Inadimplência do Crediário
 tb_crediario <- crediario_clean %>%
   group_by(status) %>%
   summarise(
     Qtd_Parcelas = n(),
-    Valor_Total_R = sum(valor_parcela),
-    Valor_Em_Aberto_R = sum(valor_em_aberto),
-    Dias_Atraso_Medio = mean(dias_atraso)
+    Valor_Total_R = sum(valor_parcela, na.rm = TRUE),
+    Valor_Em_Aberto_R = sum(valor_em_aberto, na.rm = TRUE),
+    Dias_Atraso_Medio = mean(dias_atraso, na.rm = TRUE)
   )
 
 print("--- SITUAÇÃO DO CREDIÁRIO ---")
 print(knitr::kable(tb_crediario, digits = 2))
 
-# Tabela 4: Nível de Risco e Ruptura no Estoque
-tb_estoque_status <- estoque_clean %>%
-  count(status_estoque, name = "Qtd_Produtos") %>%
-  mutate(Percentual = Qtd_Produtos / sum(Qtd_Produtos) * 100)
 
-print("--- DIAGNÓSTICO DE ESTOQUE ---")
-print(knitr::kable(tb_estoque_status, digits = 2))
-
-
-# 4. GERAÇÃO DE GRÁFICOS ANALÍTICOS (GGPLOT2) ----------------------------------
+# 8. VISUALIZAÇÕES GRÁFICAS (GGPLOT2) -------------------------------------------
 
 # Gráfico 1: Evolução Mensal do Faturamento
-g1 <- ggplot(vendas_clean %>% group_by(mes_ano) %>% summarise(Faturamento = sum(valor_total_calculado)), 
-             aes(x = mes_ano, y = Faturamento)) +
+g1 <- vendas_clean %>% 
+  group_by(mes_ano) %>% 
+  summarise(Faturamento = sum(valor_total_calculado, na.rm = TRUE)) %>% 
+  ggplot(aes(x = mes_ano, y = Faturamento)) +
   geom_line(color = "#2c3e50", size = 1.2) +
   geom_point(color = "#e74c3c", size = 3) +
   scale_y_continuous(labels = dollar_format(prefix = "R$ ", big.mark = ".", decimal.mark = ",")) +
   scale_x_date(date_labels = "%b/%Y", date_breaks = "1 month") +
   theme_minimal() +
-  labs(title = "Evolução do Faturamento Mensal (2026)", x = "Mês", y = "Faturamento Total")
+  labs(title = "Evolução do Faturamento Mensal", x = "Mês", y = "Faturamento Total")
 
 print(g1)
 
-# Gráfico 2: Faturamento Total por Categoria de Produto
-g2 <- ggplot(tb_categoria, aes(x = reorder(categoria, Faturamento_R), y = Faturamento_R, fill = categoria)) +
-  geom_col(show.legend = FALSE) +
-  coord_flip() +
-  scale_y_continuous(labels = dollar_format(prefix = "R$ ", big.mark = ".", decimal.mark = ",")) +
-  theme_minimal() +
-  labs(title = "Faturamento Bruto por Categoria de Produto", x = "Categoria", y = "Faturamento (R$)")
-
-print(g2)
-
-# Gráfico 3: Distribuição das Formas de Pagamento
-g3 <- vendas_clean %>%
-  count(forma_pagamento) %>%
-  ggplot(aes(x = reorder(forma_pagamento, n), y = n, fill = forma_pagamento)) +
-  geom_col(show.legend = FALSE) +
-  geom_text(aes(label = n), hjust = -0.2) +
-  coord_flip() +
-  theme_minimal() +
-  labs(title = "Volume de Vendas por Forma de Pagamento", x = "Forma de Pagamento", y = "Número de Transações")
-
-print(g3)
-
-# Gráfico 4: Avaliação da Eficácia das Promoções (Vendas Antes vs Durante)
-g4 <- promocoes %>%
+# Gráfico 2: Efeito Promocional no Volume de Vendas
+g2 <- promocoes_clean %>%
   pivot_longer(cols = c(vendas_antes, vendas_durante), names_to = "Periodo", values_to = "Volume") %>%
   mutate(Periodo = ifelse(Periodo == "vendas_antes", "Antes da Promoção", "Durante a Promoção")) %>%
   ggplot(aes(x = reorder(produto, Volume), y = Volume, fill = Periodo)) +
@@ -185,6 +262,6 @@ g4 <- promocoes %>%
   coord_flip() +
   theme_minimal() +
   scale_fill_manual(values = c("#95a5a6", "#2ecc71")) +
-  labs(title = "Efeito Promocional no Volume de Vendas por Produto", x = "Produto", y = "Unidades Vendidas", fill = "Período")
+  labs(title = "Efeito Promocional por Produto", x = "Produto", y = "Unidades Vendidas", fill = "Período")
 
-print(g4)
+print(g2)
