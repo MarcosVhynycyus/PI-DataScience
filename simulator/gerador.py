@@ -99,7 +99,10 @@ def gerar_vendas(n: int, clientes: pd.DataFrame, vendedores: pd.DataFrame,
         # --- TRATAMENTO PARA EVITAR ERROS COM PREÇO FORMATADO COMO TEXTO ---
         preco_raw = produto_row["preco_unitario"]
         if isinstance(preco_raw, str):
-            preco_limpo = preco_raw.replace("R$", "").replace(".", "").replace(",", ".").strip()
+            preco_limpo = preco_raw.replace("R$", "").strip()
+            if "," in preco_limpo:
+                # Formato PT-BR: "1.234,56" -> remove pontos de milhar e troca vírgula por ponto
+                preco_limpo = preco_limpo.replace(".", "").replace(",", ".")
             try:
                 preco_unitario = float(preco_limpo)
             except ValueError:
