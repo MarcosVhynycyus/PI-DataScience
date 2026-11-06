@@ -90,13 +90,11 @@ Guarde os 4 IPs — serão usados no inventário do Ansible.
 ### 3.1 `infra/ansible/inventory.ini`
 
 ```ini
-[masters]
-devops-1 ansible_host=<IP_DEVOPS_1>
+[monitoring]
+devops-1 ansible_host=<IP_DEVOPS-1>
 
-[workers]
-devops-2 ansible_host=<IP_DEVOPS_2>
-devops-3 ansible_host=<IP_DEVOPS_3>
-devops-4 ansible_host=<IP_DEVOPS_4>
+[simulator]
+devops-2 ansible_host=<IP_DEVOPS-2>
 
 [all:vars]
 ansible_user=marcos
@@ -116,6 +114,7 @@ ansible -i inventory.ini all -m ping
 
 
 ```
+---
 ---
 - name: Preparar todas as VMs (Docker)
   hosts: all
@@ -164,31 +163,6 @@ ansible -i inventory.ini all -m ping
         name: docker
         state: started
         enabled: true
-
-- name: Configurar VM de Big Data
-  hosts: bigdata
-  become: true
-  tasks:
-    - name: Criar diretórios para datalake/datawarehouse
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: directory
-        owner: marcos
-        mode: "0755"
-      loop:
-        - /opt/bigdata/datalake
-        - /opt/bigdata/datawarehouse
-
-- name: Configurar VM de ETL
-  hosts: etl
-  become: true
-  tasks:
-    - name: Criar diretório da pipeline de ETL
-      ansible.builtin.file:
-        path: /opt/etl
-        state: directory
-        owner: marcos
-        mode: "0755"
 
 - name: Configurar VM de Monitoramento
   hosts: monitoring

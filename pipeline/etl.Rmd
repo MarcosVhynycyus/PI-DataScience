@@ -1,12 +1,73 @@
 ```{r}
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, lubridate, scales, knitr, janitor)
+pacman::p_load(tidyverse, lubridate, scales, knitr, janitor, httr2, yyjsonr, jsonlite, dplyr)
 
 # Criar diretório de saída para os dados tratados se não existir
 if (!dir.exists("./clean_data")) {
   dir.create("./clean_data", recursive = TRUE)
 }
+
+if (!dir.exists("./data")) {
+  dir.create("./data", recursive = TRUE)
+}
 ```
+
+```{r}
+library(httr2)
+library(jsonlite)
+
+url_vendas <- "http://192.168.122.92:5000/api/tabelas/vendas"
+url_vendedores <- "http://192.168.122.92:5000/api/tabelas/vendedores"
+url_clientes <- "http://192.168.122.92:5000/api/tabelas/clientes"
+url_promocoes <- "http://192.168.122.92:5000/api/tabelas/promocoes"
+url_estoque <- "http://192.168.122.92:5000/api/tabelas/estoque"
+url_crediario <- "http://192.168.122.92:5000/api/tabelas/crediario"
+```
+
+```{r}
+req_vendas <- request(url_vendas)
+resp_vendas <- request(url_vendas) |> req_perform()
+txt <- resp_body_string(resp_vendas)
+txt_limpo <- gsub("\\bNaN\\b", "null", txt)
+dados_vendas <- jsonlite::fromJSON(txt_limpo)
+
+req_vendedores <- request(url_vendedores)
+resp_vendedores <- req_perform(req_vendedores)
+dados_vendedores <- resp_body_json(resp_vendedores)
+
+req_clientes <- request(url_clientes)
+resp_clientes <- req_perform(req_clientes)
+dados_clientes <- resp_body_json(resp_clientes)
+
+req_promocoes <- request(url_promocoes)
+resp_promocoes <- req_perform(req_promocoes)
+dados_promocoes <- resp_body_json(resp_promocoes)
+
+req_estoque <- request(url_estoque)
+resp_estoque <- req_perform(req_estoque)
+dados_estoque <- resp_body_json(resp_estoque)
+
+req_crediario <- request(url_crediario)
+resp_crediario <- req_perform(req_crediario)
+dados_crediario <- resp_body_json(resp_crediario)
+```
+
+```{r}
+df_vendas <- as.data.frame(dados_vendas)
+df_vendedores <- dplyr::bind_rows(dados_vendedores)
+df_clientes <- dplyr::bind_rows(dados_clientes)
+df_crediario <- dplyr::bind_rows(dados_crediario)
+df_promocoes <- dplyr::bind_rows(dados_promocoes)
+df_estoque <- dplyr::bind_rows(dados_estoque)
+
+write.csv(df_vendas, "./data/vendas.csv", row.names = FALSE)
+write.csv(df_vendedores, "./data/vendedores.csv", row.names = FALSE)
+write.csv(df_clientes, "./data/clientes.csv", row.names = FALSE)
+write.csv(df_crediario, "./data/crediario.csv", row.names = FALSE)
+write.csv(df_promocoes, "./data/promocoes.csv", row.names = FALSE)
+write.csv(df_estoque, "./data/estoque.csv", row.names = FALSE)
+```
+
 
 ```{r}
 clientes_raw   <- read.csv("./data/clientes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")

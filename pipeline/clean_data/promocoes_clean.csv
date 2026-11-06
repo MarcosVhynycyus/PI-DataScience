@@ -1,16 +1,501 @@
-"id_promocao","produto","categoria","tipo_desconto","desconto","data_inicio","data_fim","vendas_antes","vendas_durante","lift_vendas_pct"
-1,"Camiseta Esporte","Camiseta","Valor Fixo",0.25,2026-08-14,2026-08-22,26,40,53.85
-2,"Blusa Esporte","Blusa","Percentual",0.14,2026-04-20,2026-05-05,13,22,69.23
-3,"Acessório Casual","Acessório","Valor Fixo",0.33,2026-06-09,2026-06-29,30,58,93.33
-4,"Vestido Premium","Vestido","Percentual",0.1,2026-05-26,2026-06-07,22,29,31.82
-5,"Jaqueta Slim","Jaqueta","Valor Fixo",0.13,2026-04-14,2026-05-01,51,123,141.18
-6,"Vestido Slim","Vestido","Valor Fixo",0.25,2026-06-08,2026-06-17,38,87,128.95
-7,"Acessório Esporte","Acessório","Percentual",0.18,2026-03-10,2026-03-18,15,22,46.67
-8,"Bermuda Básica","Bermuda","Valor Fixo",0.33,2026-06-26,2026-07-11,36,82,127.78
-9,"Camiseta Casual","Camiseta","Valor Fixo",0.29,2026-04-17,2026-04-25,17,35,105.88
-10,"Blusa Casual","Blusa","Percentual",0.13,2026-08-13,2026-09-01,40,53,32.5
-11,"Camiseta Esporte","Camiseta","Percentual",0.11,2026-05-30,2026-06-12,51,68,33.33
-12,"Calça Slim","Calça","Valor Fixo",0.28,2026-09-19,2026-09-26,41,57,39.02
-13,"Vestido Premium","Vestido","Valor Fixo",0.33,2026-09-19,2026-09-30,27,37,37.04
-14,"Jaqueta Básica","Jaqueta","Percentual",0.16,2026-08-17,2026-09-05,34,52,52.94
-15,"Calça Social","Calça","Percentual",0.18,2026-07-22,2026-07-31,53,73,37.74
+"categoria","data_fim","data_inicio","desconto","id_promocao","produto","tipo_desconto","vendas_antes","vendas_durante","lift_vendas_pct"
+"Blusa",2026-05-16,2026-05-10,0.13,1,"Blusa X","Percentual",25,44,76
+"Bermuda",2026-10-25,2026-10-14,0.18,2,"Bermuda Social","Valor Fixo",30,45,50
+"Calça",2026-05-23,2026-05-12,0.24,3,"Calça Social","Valor Fixo",47,62,31.91
+"Vestido",2026-07-13,2026-07-02,0.3,4,"Vestido X","Percentual",48,66,37.5
+"Camiseta",2026-09-18,2026-08-31,0.26,5,"Camiseta Básica","Valor Fixo",21,32,52.38
+"Blusa",2026-07-02,2026-06-13,0.24,6,"Blusa Slim","Percentual",11,21,90.91
+"Bermuda",2026-05-23,2026-05-10,0.32,7,"Bermuda Esporte","Percentual",16,33,106.25
+"Blusa",2026-05-25,2026-05-18,0.34,8,"Blusa Básica","Valor Fixo",14,20,42.86
+"Acessório",2026-05-26,2026-05-08,0.17,9,"Acessório Básica","Percentual",49,84,71.43
+"Vestido",2026-04-03,2026-03-28,0.16,10,"Vestido Social","Percentual",47,90,91.49
+"Jaqueta",2026-06-28,2026-06-13,0.22,11,"Jaqueta Casual","Percentual",21,50,138.1
+"Calça",2026-08-26,2026-08-08,0.32,12,"Calça Premium","Valor Fixo",35,83,137.14
+"Camiseta",2026-03-15,2026-03-06,0.19,13,"Camiseta Casual","Percentual",41,58,41.46
+"Blusa",2026-05-21,2026-05-12,0.15,14,"Blusa Básica","Percentual",47,111,136.17
+"Camiseta",2026-05-23,2026-05-13,0.1,15,"Camiseta X","Percentual",28,48,71.43
+"Bermuda",2026-06-16,2026-05-27,0.27,16,"Bermuda Esporte","Percentual",11,19,72.73
+"Bermuda",2026-11-07,2026-10-27,0.29,17,"Bermuda X","Valor Fixo",50,107,114
+"Blusa",2026-04-19,2026-03-30,0.19,18,"Blusa Slim","Valor Fixo",49,76,55.1
+"Blusa",2026-06-15,2026-06-01,0.22,19,"Blusa Esporte","Valor Fixo",42,56,33.33
+"Camiseta",2026-03-18,2026-03-07,0.23,20,"Camiseta Básica","Valor Fixo",40,97,142.5
+"Jaqueta",2026-08-23,2026-08-15,0.15,21,"Jaqueta Básica","Valor Fixo",23,55,139.13
+"Camiseta",2026-07-25,2026-07-13,0.24,22,"Camiseta Slim","Valor Fixo",46,108,134.78
+"Blusa",2026-05-04,2026-04-16,0.31,23,"Blusa Slim","Valor Fixo",41,62,51.22
+"Bermuda",2026-03-31,2026-03-24,0.16,24,"Bermuda X","Valor Fixo",53,83,56.6
+"Bermuda",2026-06-26,2026-06-21,0.27,25,"Bermuda X","Percentual",13,22,69.23
+"Blusa",2026-05-22,2026-05-13,0.26,26,"Blusa Social","Valor Fixo",50,112,124
+"Bermuda",2026-10-13,2026-10-03,0.22,27,"Bermuda Premium","Valor Fixo",45,102,126.67
+"Acessório",2026-10-08,2026-09-27,0.13,28,"Acessório Social","Percentual",13,32,146.15
+"Camiseta",2026-05-12,2026-05-01,0.21,29,"Camiseta Esporte","Percentual",22,46,109.09
+"Acessório",2026-10-13,2026-10-04,0.22,30,"Acessório X","Valor Fixo",36,79,119.44
+"Jaqueta",2026-10-25,2026-10-12,0.18,31,"Jaqueta Casual","Valor Fixo",26,64,146.15
+"Blusa",2026-09-30,2026-09-17,0.24,32,"Blusa Social","Percentual",31,71,129.03
+"Blusa",2026-08-27,2026-08-21,0.22,33,"Blusa Esporte","Valor Fixo",11,24,118.18
+"Bermuda",2026-04-01,2026-03-17,0.35,34,"Bermuda Social","Valor Fixo",31,69,122.58
+"Jaqueta",2026-05-17,2026-04-28,0.33,35,"Jaqueta Esporte","Percentual",25,34,36
+"Acessório",2026-10-03,2026-09-15,0.3,36,"Acessório Básica","Percentual",29,55,89.66
+"Bermuda",2026-07-10,2026-06-29,0.2,37,"Bermuda Social","Percentual",19,43,126.32
+"Jaqueta",2026-07-23,2026-07-14,0.35,38,"Jaqueta Social","Percentual",27,35,29.63
+"Calça",2026-07-25,2026-07-09,0.21,39,"Calça Básica","Valor Fixo",10,13,30
+"Bermuda",2026-11-03,2026-10-15,0.26,40,"Bermuda Premium","Valor Fixo",50,84,68
+"Acessório",2026-05-27,2026-05-21,0.33,41,"Acessório X","Valor Fixo",19,25,31.58
+"Jaqueta",2026-07-07,2026-06-25,0.1,42,"Jaqueta Slim","Percentual",55,134,143.64
+"Blusa",2026-09-20,2026-09-03,0.23,43,"Blusa Esporte","Percentual",41,96,134.15
+"Bermuda",2026-07-11,2026-07-02,0.21,44,"Bermuda Premium","Valor Fixo",35,61,74.29
+"Bermuda",2026-07-20,2026-07-03,0.27,45,"Bermuda Social","Valor Fixo",29,62,113.79
+"Jaqueta",2026-10-12,2026-10-05,0.3,46,"Jaqueta X","Valor Fixo",46,82,78.26
+"Blusa",2026-05-07,2026-04-28,0.31,47,"Blusa Esporte","Percentual",46,82,78.26
+"Blusa",2026-06-24,2026-06-17,0.29,48,"Blusa Esporte","Valor Fixo",54,119,120.37
+"Jaqueta",2026-03-24,2026-03-14,0.11,49,"Jaqueta Premium","Valor Fixo",38,91,139.47
+"Blusa",2026-03-30,2026-03-23,0.33,50,"Blusa Slim","Percentual",52,83,59.62
+"Blusa",2026-10-17,2026-10-07,0.26,51,"Blusa Casual","Percentual",53,132,149.06
+"Camiseta",2026-03-06,2026-03-01,0.14,52,"Camiseta Esporte","Valor Fixo",45,68,51.11
+"Calça",2026-09-28,2026-09-15,0.13,53,"Calça Premium","Valor Fixo",60,108,80
+"Jaqueta",2026-08-24,2026-08-08,0.14,54,"Jaqueta Casual","Percentual",13,25,92.31
+"Bermuda",2026-05-17,2026-04-29,0.27,55,"Bermuda Esporte","Valor Fixo",14,33,135.71
+"Calça",2026-07-07,2026-06-25,0.32,56,"Calça Básica","Valor Fixo",18,40,122.22
+"Acessório",2026-08-05,2026-07-17,0.2,57,"Acessório Social","Valor Fixo",55,95,72.73
+"Acessório",2026-07-17,2026-07-10,0.32,58,"Acessório Social","Percentual",48,119,147.92
+"Blusa",2026-09-02,2026-08-22,0.26,59,"Blusa Casual","Valor Fixo",43,103,139.53
+"Acessório",2026-08-06,2026-07-29,0.16,60,"Acessório Básica","Valor Fixo",13,21,61.54
+"Vestido",2026-11-10,2026-10-26,0.33,61,"Vestido Casual","Percentual",32,50,56.25
+"Jaqueta",2026-04-20,2026-04-01,0.33,62,"Jaqueta Premium","Percentual",18,39,116.67
+"Jaqueta",2026-04-07,2026-03-22,0.13,63,"Jaqueta Premium","Valor Fixo",16,34,112.5
+"Camiseta",2026-09-22,2026-09-10,0.1,64,"Camiseta Básica","Valor Fixo",21,29,38.1
+"Camiseta",2026-09-15,2026-09-02,0.2,65,"Camiseta Social","Percentual",28,44,57.14
+"Acessório",2026-08-09,2026-07-30,0.18,66,"Acessório Esporte","Valor Fixo",40,68,70
+"Blusa",2026-09-10,2026-09-04,0.29,67,"Blusa Básica","Valor Fixo",48,65,35.42
+"Blusa",2026-04-28,2026-04-23,0.11,68,"Blusa Básica","Valor Fixo",41,81,97.56
+"Jaqueta",2026-05-22,2026-05-11,0.15,69,"Jaqueta Premium","Valor Fixo",45,91,102.22
+"Camiseta",2026-11-08,2026-10-27,0.18,70,"Camiseta Casual","Percentual",22,47,113.64
+"Vestido",2026-03-22,2026-03-02,0.17,71,"Vestido Premium","Percentual",57,79,38.6
+"Vestido",2026-09-13,2026-08-28,0.24,72,"Vestido Social","Percentual",57,91,59.65
+"Blusa",2026-05-05,2026-04-24,0.11,73,"Blusa Básica","Valor Fixo",37,52,40.54
+"Vestido",2026-11-11,2026-10-31,0.25,74,"Vestido Premium","Valor Fixo",52,114,119.23
+"Acessório",2026-11-10,2026-10-24,0.21,75,"Acessório Casual","Valor Fixo",31,63,103.23
+"Acessório",2026-10-20,2026-10-09,0.35,76,"Acessório X","Valor Fixo",43,77,79.07
+"Calça",2026-06-14,2026-05-29,0.29,77,"Calça Básica","Valor Fixo",26,44,69.23
+"Bermuda",2026-09-30,2026-09-17,0.31,78,"Bermuda Casual","Percentual",28,38,35.71
+"Acessório",2026-06-14,2026-06-07,0.15,79,"Acessório Casual","Valor Fixo",23,56,143.48
+"Camiseta",2026-06-25,2026-06-09,0.17,80,"Camiseta Básica","Percentual",14,34,142.86
+"Acessório",2026-07-29,2026-07-18,0.17,81,"Acessório Social","Valor Fixo",12,26,116.67
+"Vestido",2026-08-22,2026-08-08,0.29,82,"Vestido Casual","Percentual",53,116,118.87
+"Camiseta",2026-08-16,2026-08-07,0.16,83,"Camiseta Premium","Valor Fixo",57,127,122.81
+"Bermuda",2026-08-06,2026-07-28,0.27,84,"Bermuda Social","Percentual",16,24,50
+"Calça",2026-10-18,2026-10-07,0.32,85,"Calça Esporte","Percentual",59,135,128.81
+"Calça",2026-03-11,2026-03-01,0.21,86,"Calça Casual","Percentual",56,109,94.64
+"Bermuda",2026-11-03,2026-10-27,0.12,87,"Bermuda Básica","Percentual",21,47,123.81
+"Bermuda",2026-09-04,2026-08-20,0.32,88,"Bermuda Casual","Percentual",38,89,134.21
+"Camiseta",2026-10-10,2026-10-02,0.35,89,"Camiseta Básica","Valor Fixo",24,33,37.5
+"Camiseta",2026-10-03,2026-09-20,0.26,90,"Camiseta Básica","Valor Fixo",60,129,115
+"Calça",2026-07-08,2026-06-27,0.26,91,"Calça Casual","Valor Fixo",38,69,81.58
+"Vestido",2026-08-16,2026-08-02,0.24,92,"Vestido Esporte","Valor Fixo",24,58,141.67
+"Bermuda",2026-08-31,2026-08-21,0.3,93,"Bermuda Casual","Percentual",45,96,113.33
+"Calça",2026-04-28,2026-04-12,0.31,94,"Calça Casual","Percentual",17,40,135.29
+"Jaqueta",2026-09-19,2026-09-06,0.26,95,"Jaqueta Casual","Percentual",40,54,35
+"Calça",2026-08-02,2026-07-14,0.21,96,"Calça Premium","Percentual",35,80,128.57
+"Camiseta",2026-08-04,2026-07-22,0.3,97,"Camiseta Básica","Percentual",60,100,66.67
+"Vestido",2026-04-30,2026-04-20,0.3,98,"Vestido Premium","Valor Fixo",59,85,44.07
+"Vestido",2026-03-12,2026-03-07,0.32,99,"Vestido Social","Valor Fixo",17,32,88.24
+"Bermuda",2026-07-17,2026-07-05,0.11,100,"Bermuda Social","Percentual",48,80,66.67
+"Calça",2026-10-22,2026-10-17,0.12,101,"Calça Esporte","Percentual",30,68,126.67
+"Vestido",2026-08-14,2026-07-30,0.12,102,"Vestido Social","Valor Fixo",58,134,131.03
+"Calça",2026-10-20,2026-10-05,0.32,103,"Calça Básica","Percentual",18,35,94.44
+"Calça",2026-06-07,2026-05-19,0.3,104,"Calça Premium","Percentual",57,139,143.86
+"Calça",2026-03-18,2026-03-11,0.28,105,"Calça Casual","Percentual",42,103,145.24
+"Blusa",2026-03-28,2026-03-11,0.21,106,"Blusa Esporte","Valor Fixo",14,21,50
+"Camiseta",2026-07-02,2026-06-23,0.24,107,"Camiseta Casual","Percentual",29,42,44.83
+"Jaqueta",2026-09-01,2026-08-18,0.19,108,"Jaqueta X","Valor Fixo",15,22,46.67
+"Bermuda",2026-05-24,2026-05-11,0.11,109,"Bermuda Casual","Percentual",13,23,76.92
+"Camiseta",2026-06-06,2026-05-25,0.1,110,"Camiseta Esporte","Percentual",51,87,70.59
+"Blusa",2026-06-24,2026-06-10,0.18,111,"Blusa Esporte","Percentual",29,49,68.97
+"Blusa",2026-04-05,2026-03-19,0.21,112,"Blusa Casual","Percentual",35,58,65.71
+"Vestido",2026-06-16,2026-06-01,0.14,113,"Vestido Esporte","Percentual",35,69,97.14
+"Calça",2026-10-13,2026-10-04,0.12,114,"Calça Básica","Percentual",37,80,116.22
+"Calça",2026-10-01,2026-09-20,0.19,115,"Calça Esporte","Percentual",58,93,60.34
+"Jaqueta",2026-05-31,2026-05-15,0.25,116,"Jaqueta Slim","Percentual",52,79,51.92
+"Bermuda",2026-10-12,2026-09-25,0.16,117,"Bermuda Esporte","Percentual",21,47,123.81
+"Blusa",2026-07-16,2026-07-03,0.17,118,"Blusa Básica","Percentual",49,64,30.61
+"Calça",2026-05-03,2026-04-19,0.35,119,"Calça Social","Percentual",40,79,97.5
+"Blusa",2026-07-19,2026-07-01,0.18,120,"Blusa Básica","Valor Fixo",35,54,54.29
+"Blusa",2026-10-05,2026-09-15,0.34,121,"Blusa Casual","Valor Fixo",42,64,52.38
+"Acessório",2026-08-03,2026-07-22,0.2,122,"Acessório X","Valor Fixo",17,34,100
+"Camiseta",2026-10-10,2026-09-21,0.14,123,"Camiseta Casual","Percentual",14,19,35.71
+"Camiseta",2026-06-27,2026-06-07,0.13,124,"Camiseta Básica","Percentual",52,111,113.46
+"Jaqueta",2026-05-29,2026-05-23,0.35,125,"Jaqueta Premium","Valor Fixo",13,20,53.85
+"Vestido",2026-07-21,2026-07-06,0.26,126,"Vestido Casual","Percentual",28,54,92.86
+"Vestido",2026-09-14,2026-08-28,0.33,127,"Vestido Básica","Percentual",23,55,139.13
+"Acessório",2026-04-19,2026-04-11,0.31,128,"Acessório X","Percentual",16,34,112.5
+"Jaqueta",2026-11-08,2026-10-25,0.17,129,"Jaqueta Slim","Percentual",22,53,140.91
+"Vestido",2026-05-18,2026-05-13,0.19,130,"Vestido Casual","Valor Fixo",11,27,145.45
+"Blusa",2026-06-14,2026-05-30,0.29,131,"Blusa Premium","Percentual",11,24,118.18
+"Jaqueta",2026-10-17,2026-10-02,0.13,132,"Jaqueta Casual","Valor Fixo",58,128,120.69
+"Bermuda",2026-04-29,2026-04-20,0.2,133,"Bermuda Casual","Percentual",25,40,60
+"Camiseta",2026-07-13,2026-06-25,0.15,134,"Camiseta Social","Percentual",38,57,50
+"Vestido",2026-11-07,2026-10-28,0.18,135,"Vestido Casual","Percentual",34,67,97.06
+"Camiseta",2026-06-15,2026-05-30,0.29,136,"Camiseta X","Percentual",45,80,77.78
+"Vestido",2026-04-21,2026-04-08,0.26,137,"Vestido Social","Valor Fixo",41,91,121.95
+"Blusa",2026-04-30,2026-04-21,0.2,138,"Blusa Esporte","Valor Fixo",36,80,122.22
+"Vestido",2026-03-22,2026-03-03,0.34,139,"Vestido X","Percentual",12,18,50
+"Acessório",2026-10-17,2026-09-29,0.27,140,"Acessório X","Valor Fixo",24,54,125
+"Calça",2026-10-15,2026-10-10,0.32,141,"Calça Esporte","Valor Fixo",11,23,109.09
+"Vestido",2026-09-01,2026-08-12,0.11,142,"Vestido Básica","Valor Fixo",47,82,74.47
+"Acessório",2026-07-04,2026-06-27,0.32,143,"Acessório Esporte","Percentual",54,100,85.19
+"Blusa",2026-04-28,2026-04-21,0.31,144,"Blusa Básica","Percentual",23,30,30.43
+"Vestido",2026-08-14,2026-07-27,0.13,145,"Vestido Social","Valor Fixo",53,110,107.55
+"Vestido",2026-10-26,2026-10-13,0.34,146,"Vestido X","Valor Fixo",56,88,57.14
+"Vestido",2026-05-30,2026-05-13,0.25,147,"Vestido Social","Valor Fixo",19,34,78.95
+"Blusa",2026-05-18,2026-05-12,0.14,148,"Blusa Premium","Valor Fixo",18,39,116.67
+"Blusa",2026-04-29,2026-04-11,0.34,149,"Blusa Social","Valor Fixo",32,43,34.38
+"Camiseta",2026-07-13,2026-06-27,0.26,150,"Camiseta X","Valor Fixo",52,90,73.08
+"Calça",2026-07-15,2026-07-01,0.1,151,"Calça Premium","Percentual",19,37,94.74
+"Blusa",2026-06-26,2026-06-08,0.35,152,"Blusa Casual","Valor Fixo",54,101,87.04
+"Calça",2026-11-04,2026-10-28,0.13,153,"Calça Esporte","Valor Fixo",39,84,115.38
+"Jaqueta",2026-09-25,2026-09-12,0.17,154,"Jaqueta Slim","Valor Fixo",47,88,87.23
+"Camiseta",2026-07-15,2026-06-28,0.17,155,"Camiseta Social","Percentual",49,91,85.71
+"Blusa",2026-04-30,2026-04-15,0.33,156,"Blusa X","Percentual",51,109,113.73
+"Bermuda",2026-08-27,2026-08-10,0.34,157,"Bermuda Casual","Valor Fixo",24,42,75
+"Blusa",2026-05-22,2026-05-10,0.14,158,"Blusa Básica","Valor Fixo",48,75,56.25
+"Calça",2026-05-18,2026-05-04,0.19,159,"Calça Social","Percentual",14,21,50
+"Vestido",2026-03-27,2026-03-17,0.27,160,"Vestido Básica","Percentual",29,56,93.1
+"Calça",2026-05-25,2026-05-18,0.23,161,"Calça Premium","Valor Fixo",27,58,114.81
+"Calça",2026-07-21,2026-07-03,0.21,162,"Calça Premium","Valor Fixo",35,61,74.29
+"Blusa",2026-08-09,2026-07-24,0.19,163,"Blusa Slim","Percentual",18,28,55.56
+"Vestido",2026-07-30,2026-07-21,0.12,164,"Vestido Básica","Valor Fixo",34,75,120.59
+"Blusa",2026-08-23,2026-08-10,0.14,165,"Blusa Básica","Percentual",16,30,87.5
+"Vestido",2026-06-08,2026-05-29,0.18,166,"Vestido Social","Percentual",42,71,69.05
+"Blusa",2026-08-24,2026-08-18,0.2,167,"Blusa Slim","Valor Fixo",21,39,85.71
+"Jaqueta",2026-05-13,2026-05-04,0.27,168,"Jaqueta X","Percentual",18,39,116.67
+"Calça",2026-09-24,2026-09-13,0.13,169,"Calça Básica","Percentual",12,17,41.67
+"Blusa",2026-09-24,2026-09-19,0.15,170,"Blusa Esporte","Percentual",15,23,53.33
+"Blusa",2026-11-09,2026-10-23,0.26,171,"Blusa Esporte","Valor Fixo",17,32,88.24
+"Blusa",2026-08-24,2026-08-19,0.22,172,"Blusa Casual","Valor Fixo",53,74,39.62
+"Camiseta",2026-08-24,2026-08-18,0.28,173,"Camiseta Slim","Percentual",26,63,142.31
+"Acessório",2026-07-03,2026-06-22,0.25,174,"Acessório Básica","Valor Fixo",37,85,129.73
+"Jaqueta",2026-08-31,2026-08-14,0.1,175,"Jaqueta Casual","Valor Fixo",60,143,138.33
+"Vestido",2026-05-23,2026-05-17,0.14,176,"Vestido Social","Percentual",14,20,42.86
+"Jaqueta",2026-03-23,2026-03-06,0.17,177,"Jaqueta Premium","Percentual",38,81,113.16
+"Bermuda",2026-07-11,2026-07-02,0.17,178,"Bermuda Premium","Valor Fixo",60,81,35
+"Camiseta",2026-06-22,2026-06-17,0.31,179,"Camiseta X","Percentual",54,76,40.74
+"Bermuda",2026-05-26,2026-05-08,0.31,180,"Bermuda Casual","Valor Fixo",10,15,50
+"Blusa",2026-07-18,2026-07-06,0.24,181,"Blusa Casual","Valor Fixo",31,73,135.48
+"Jaqueta",2026-03-21,2026-03-12,0.32,182,"Jaqueta X","Valor Fixo",36,73,102.78
+"Acessório",2026-05-19,2026-05-10,0.3,183,"Acessório X","Percentual",27,42,55.56
+"Jaqueta",2026-04-02,2026-03-26,0.16,184,"Jaqueta Casual","Percentual",19,32,68.42
+"Vestido",2026-04-11,2026-03-28,0.15,185,"Vestido Básica","Percentual",53,80,50.94
+"Vestido",2026-03-31,2026-03-24,0.34,186,"Vestido Casual","Percentual",30,72,140
+"Bermuda",2026-09-11,2026-09-05,0.16,187,"Bermuda Social","Percentual",34,71,108.82
+"Bermuda",2026-05-30,2026-05-15,0.31,188,"Bermuda Premium","Percentual",16,38,137.5
+"Bermuda",2026-07-21,2026-07-12,0.13,189,"Bermuda X","Valor Fixo",25,58,132
+"Jaqueta",2026-03-21,2026-03-13,0.28,190,"Jaqueta X","Percentual",60,108,80
+"Vestido",2026-10-21,2026-10-07,0.27,191,"Vestido Slim","Valor Fixo",29,70,141.38
+"Jaqueta",2026-11-20,2026-11-03,0.34,192,"Jaqueta Slim","Valor Fixo",10,17,70
+"Blusa",2026-10-24,2026-10-16,0.12,193,"Blusa X","Percentual",14,31,121.43
+"Acessório",2026-10-29,2026-10-14,0.21,194,"Acessório X","Percentual",29,55,89.66
+"Camiseta",2026-05-12,2026-04-22,0.13,195,"Camiseta Casual","Valor Fixo",35,85,142.86
+"Bermuda",2026-11-02,2026-10-28,0.15,196,"Bermuda X","Valor Fixo",22,43,95.45
+"Vestido",2026-08-30,2026-08-21,0.19,197,"Vestido Social","Valor Fixo",32,55,71.88
+"Camiseta",2026-03-20,2026-03-13,0.3,198,"Camiseta Premium","Percentual",36,74,105.56
+"Calça",2026-05-28,2026-05-15,0.14,199,"Calça Básica","Percentual",50,103,106
+"Acessório",2026-07-31,2026-07-23,0.34,200,"Acessório Básica","Percentual",53,97,83.02
+"Bermuda",2026-04-05,2026-03-23,0.28,201,"Bermuda Social","Percentual",58,87,50
+"Calça",2026-04-12,2026-03-25,0.18,202,"Calça Básica","Percentual",51,107,109.8
+"Camiseta",2026-05-25,2026-05-06,0.22,203,"Camiseta X","Valor Fixo",31,69,122.58
+"Jaqueta",2026-09-08,2026-08-20,0.16,204,"Jaqueta Esporte","Valor Fixo",54,110,103.7
+"Blusa",2026-05-10,2026-04-22,0.24,205,"Blusa Premium","Percentual",52,84,61.54
+"Blusa",2026-05-24,2026-05-09,0.11,206,"Blusa Básica","Valor Fixo",16,34,112.5
+"Calça",2026-06-24,2026-06-13,0.33,207,"Calça Slim","Valor Fixo",55,109,98.18
+"Vestido",2026-08-16,2026-08-06,0.32,208,"Vestido Premium","Valor Fixo",23,53,130.43
+"Jaqueta",2026-03-09,2026-03-03,0.26,209,"Jaqueta X","Valor Fixo",41,57,39.02
+"Vestido",2026-11-04,2026-10-21,0.28,210,"Vestido Premium","Valor Fixo",24,33,37.5
+"Blusa",2026-10-27,2026-10-11,0.35,211,"Blusa Casual","Percentual",44,103,134.09
+"Acessório",2026-04-05,2026-03-18,0.19,212,"Acessório Básica","Percentual",35,55,57.14
+"Calça",2026-10-17,2026-09-30,0.33,213,"Calça Social","Valor Fixo",38,70,84.21
+"Camiseta",2026-03-28,2026-03-23,0.11,214,"Camiseta Casual","Percentual",35,57,62.86
+"Blusa",2026-04-11,2026-03-26,0.16,215,"Blusa Esporte","Valor Fixo",20,40,100
+"Bermuda",2026-06-08,2026-05-27,0.11,216,"Bermuda Casual","Valor Fixo",20,35,75
+"Vestido",2026-04-05,2026-03-17,0.15,217,"Vestido Básica","Valor Fixo",38,85,123.68
+"Camiseta",2026-09-24,2026-09-07,0.31,218,"Camiseta Slim","Percentual",32,59,84.38
+"Calça",2026-06-04,2026-05-22,0.12,219,"Calça Social","Percentual",58,140,141.38
+"Camiseta",2026-07-25,2026-07-09,0.26,220,"Camiseta Básica","Valor Fixo",10,16,60
+"Camiseta",2026-10-21,2026-10-02,0.25,221,"Camiseta X","Valor Fixo",21,51,142.86
+"Calça",2026-09-04,2026-08-20,0.27,222,"Calça Social","Valor Fixo",46,107,132.61
+"Jaqueta",2026-08-07,2026-07-31,0.33,223,"Jaqueta Premium","Valor Fixo",54,117,116.67
+"Calça",2026-08-19,2026-08-12,0.3,224,"Calça Básica","Percentual",13,22,69.23
+"Camiseta",2026-06-11,2026-05-27,0.26,225,"Camiseta Básica","Percentual",58,139,139.66
+"Acessório",2026-08-01,2026-07-21,0.32,226,"Acessório Social","Percentual",41,55,34.15
+"Jaqueta",2026-05-01,2026-04-17,0.25,227,"Jaqueta Slim","Percentual",42,81,92.86
+"Camiseta",2026-03-09,2026-03-03,0.14,228,"Camiseta Premium","Valor Fixo",53,94,77.36
+"Blusa",2026-09-21,2026-09-01,0.14,229,"Blusa Slim","Percentual",27,52,92.59
+"Camiseta",2026-07-31,2026-07-14,0.19,230,"Camiseta Social","Percentual",33,55,66.67
+"Vestido",2026-09-11,2026-08-23,0.23,231,"Vestido Premium","Valor Fixo",16,33,106.25
+"Jaqueta",2026-08-15,2026-08-02,0.21,232,"Jaqueta Slim","Percentual",42,92,119.05
+"Camiseta",2026-06-15,2026-06-04,0.2,233,"Camiseta Slim","Percentual",20,48,140
+"Calça",2026-10-30,2026-10-21,0.17,234,"Calça Esporte","Percentual",32,46,43.75
+"Bermuda",2026-09-21,2026-09-09,0.17,235,"Bermuda Social","Valor Fixo",31,62,100
+"Jaqueta",2026-04-21,2026-04-12,0.22,236,"Jaqueta Casual","Valor Fixo",59,116,96.61
+"Acessório",2026-08-10,2026-07-31,0.33,237,"Acessório Social","Percentual",23,53,130.43
+"Blusa",2026-03-31,2026-03-23,0.24,238,"Blusa Social","Percentual",55,103,87.27
+"Acessório",2026-05-24,2026-05-09,0.14,239,"Acessório X","Valor Fixo",24,37,54.17
+"Acessório",2026-05-04,2026-04-21,0.15,240,"Acessório X","Percentual",28,62,121.43
+"Blusa",2026-07-22,2026-07-08,0.23,241,"Blusa X","Valor Fixo",32,65,103.12
+"Calça",2026-07-20,2026-07-01,0.12,242,"Calça Social","Percentual",33,74,124.24
+"Jaqueta",2026-10-12,2026-09-29,0.22,243,"Jaqueta Esporte","Valor Fixo",28,60,114.29
+"Vestido",2026-10-16,2026-10-07,0.2,244,"Vestido Básica","Percentual",29,67,131.03
+"Jaqueta",2026-07-29,2026-07-19,0.15,245,"Jaqueta Social","Percentual",10,21,110
+"Acessório",2026-11-13,2026-10-29,0.23,246,"Acessório X","Valor Fixo",26,44,69.23
+"Acessório",2026-09-19,2026-09-10,0.26,247,"Acessório Casual","Percentual",43,85,97.67
+"Calça",2026-08-18,2026-08-03,0.29,248,"Calça Social","Percentual",60,122,103.33
+"Calça",2026-09-22,2026-09-12,0.15,249,"Calça Premium","Percentual",27,39,44.44
+"Blusa",2026-03-25,2026-03-06,0.2,250,"Blusa Social","Valor Fixo",60,134,123.33
+"Acessório",2026-05-07,2026-05-01,0.33,251,"Acessório Social","Valor Fixo",56,81,44.64
+"Vestido",2026-07-31,2026-07-18,0.29,252,"Vestido Básica","Percentual",48,70,45.83
+"Bermuda",2026-04-03,2026-03-26,0.15,253,"Bermuda Casual","Percentual",46,80,73.91
+"Jaqueta",2026-10-15,2026-10-09,0.18,254,"Jaqueta Casual","Valor Fixo",28,39,39.29
+"Acessório",2026-04-28,2026-04-14,0.22,255,"Acessório X","Percentual",16,33,106.25
+"Calça",2026-10-08,2026-09-21,0.12,256,"Calça Slim","Percentual",46,100,117.39
+"Calça",2026-09-29,2026-09-16,0.23,257,"Calça Slim","Valor Fixo",26,58,123.08
+"Camiseta",2026-08-07,2026-07-23,0.28,258,"Camiseta Social","Percentual",25,33,32
+"Calça",2026-08-10,2026-08-05,0.15,259,"Calça Esporte","Valor Fixo",42,61,45.24
+"Vestido",2026-10-19,2026-09-29,0.27,260,"Vestido Social","Percentual",47,100,112.77
+"Acessório",2026-09-22,2026-09-05,0.24,261,"Acessório Esporte","Valor Fixo",31,48,54.84
+"Acessório",2026-04-25,2026-04-12,0.23,262,"Acessório Esporte","Percentual",57,110,92.98
+"Bermuda",2026-04-04,2026-03-24,0.12,263,"Bermuda Premium","Valor Fixo",53,108,103.77
+"Camiseta",2026-08-24,2026-08-06,0.18,264,"Camiseta X","Valor Fixo",52,86,65.38
+"Camiseta",2026-07-04,2026-06-25,0.24,265,"Camiseta Básica","Valor Fixo",46,74,60.87
+"Blusa",2026-10-31,2026-10-17,0.27,266,"Blusa Social","Percentual",20,34,70
+"Blusa",2026-05-18,2026-05-10,0.15,267,"Blusa Slim","Percentual",57,129,126.32
+"Jaqueta",2026-10-09,2026-09-22,0.15,268,"Jaqueta Social","Valor Fixo",17,28,64.71
+"Jaqueta",2026-06-09,2026-06-02,0.14,269,"Jaqueta X","Percentual",35,77,120
+"Calça",2026-06-23,2026-06-09,0.31,270,"Calça Premium","Percentual",33,49,48.48
+"Vestido",2026-11-16,2026-10-31,0.22,271,"Vestido X","Valor Fixo",39,84,115.38
+"Blusa",2026-07-09,2026-06-28,0.23,272,"Blusa X","Valor Fixo",48,95,97.92
+"Blusa",2026-03-30,2026-03-12,0.3,273,"Blusa Básica","Valor Fixo",29,64,120.69
+"Camiseta",2026-03-26,2026-03-15,0.3,274,"Camiseta Slim","Percentual",24,52,116.67
+"Acessório",2026-05-29,2026-05-18,0.11,275,"Acessório Esporte","Percentual",35,49,40
+"Acessório",2026-05-09,2026-04-28,0.33,276,"Acessório X","Valor Fixo",53,130,145.28
+"Vestido",2026-09-28,2026-09-14,0.24,277,"Vestido Premium","Percentual",52,73,40.38
+"Jaqueta",2026-03-22,2026-03-05,0.35,278,"Jaqueta Esporte","Percentual",51,117,129.41
+"Acessório",2026-08-22,2026-08-16,0.16,279,"Acessório Casual","Percentual",13,31,138.46
+"Acessório",2026-09-21,2026-09-15,0.14,280,"Acessório Social","Valor Fixo",58,139,139.66
+"Camiseta",2026-11-14,2026-10-29,0.25,281,"Camiseta Social","Valor Fixo",48,68,41.67
+"Vestido",2026-10-30,2026-10-16,0.1,282,"Vestido X","Valor Fixo",48,105,118.75
+"Camiseta",2026-06-27,2026-06-17,0.35,283,"Camiseta Esporte","Percentual",59,133,125.42
+"Jaqueta",2026-06-09,2026-05-31,0.3,284,"Jaqueta Básica","Valor Fixo",17,22,29.41
+"Vestido",2026-05-22,2026-05-08,0.1,285,"Vestido Casual","Valor Fixo",55,102,85.45
+"Blusa",2026-04-12,2026-03-28,0.28,286,"Blusa Casual","Valor Fixo",46,75,63.04
+"Vestido",2026-10-03,2026-09-27,0.28,287,"Vestido Casual","Valor Fixo",41,96,134.15
+"Camiseta",2026-09-09,2026-08-26,0.13,288,"Camiseta Esporte","Percentual",27,40,48.15
+"Jaqueta",2026-08-26,2026-08-06,0.18,289,"Jaqueta Casual","Valor Fixo",25,55,120
+"Blusa",2026-10-30,2026-10-13,0.12,290,"Blusa Slim","Percentual",23,40,73.91
+"Acessório",2026-07-04,2026-06-18,0.18,291,"Acessório Básica","Percentual",30,61,103.33
+"Blusa",2026-10-18,2026-09-30,0.25,292,"Blusa Social","Valor Fixo",42,57,35.71
+"Jaqueta",2026-09-26,2026-09-12,0.19,293,"Jaqueta Slim","Percentual",15,24,60
+"Blusa",2026-09-26,2026-09-18,0.16,294,"Blusa Esporte","Percentual",40,96,140
+"Camiseta",2026-08-03,2026-07-23,0.18,295,"Camiseta Casual","Valor Fixo",23,48,108.7
+"Camiseta",2026-08-26,2026-08-21,0.29,296,"Camiseta X","Valor Fixo",23,37,60.87
+"Bermuda",2026-04-18,2026-04-08,0.14,297,"Bermuda Básica","Percentual",60,99,65
+"Jaqueta",2026-03-24,2026-03-16,0.32,298,"Jaqueta X","Percentual",53,120,126.42
+"Calça",2026-04-11,2026-04-03,0.17,299,"Calça Premium","Percentual",31,65,109.68
+"Acessório",2026-04-09,2026-03-30,0.19,300,"Acessório X","Valor Fixo",42,79,88.1
+"Acessório",2026-08-13,2026-07-26,0.19,301,"Acessório Social","Percentual",23,50,117.39
+"Bermuda",2026-09-07,2026-09-02,0.35,302,"Bermuda Casual","Percentual",26,60,130.77
+"Calça",2026-03-17,2026-03-10,0.34,303,"Calça Casual","Percentual",58,127,118.97
+"Jaqueta",2026-03-17,2026-03-07,0.27,304,"Jaqueta Básica","Valor Fixo",57,127,122.81
+"Blusa",2026-07-10,2026-06-29,0.18,305,"Blusa Social","Percentual",13,22,69.23
+"Camiseta",2026-09-24,2026-09-12,0.33,306,"Camiseta Casual","Valor Fixo",30,51,70
+"Acessório",2026-07-15,2026-07-03,0.17,307,"Acessório Básica","Percentual",47,110,134.04
+"Blusa",2026-04-30,2026-04-14,0.25,308,"Blusa Social","Percentual",56,74,32.14
+"Jaqueta",2026-04-21,2026-04-14,0.17,309,"Jaqueta X","Valor Fixo",50,82,64
+"Calça",2026-05-09,2026-04-29,0.11,310,"Calça Básica","Percentual",48,66,37.5
+"Jaqueta",2026-11-14,2026-10-29,0.27,311,"Jaqueta Social","Percentual",13,25,92.31
+"Acessório",2026-09-15,2026-09-06,0.23,312,"Acessório Básica","Valor Fixo",42,77,83.33
+"Bermuda",2026-05-20,2026-04-30,0.11,313,"Bermuda Social","Percentual",24,32,33.33
+"Camiseta",2026-08-21,2026-08-07,0.29,314,"Camiseta Básica","Percentual",19,28,47.37
+"Acessório",2026-09-29,2026-09-21,0.29,315,"Acessório Casual","Percentual",37,91,145.95
+"Vestido",2026-06-05,2026-05-28,0.14,316,"Vestido Básica","Percentual",53,76,43.4
+"Bermuda",2026-05-24,2026-05-15,0.34,317,"Bermuda X","Valor Fixo",33,60,81.82
+"Camiseta",2026-07-09,2026-06-26,0.25,318,"Camiseta Esporte","Percentual",52,96,84.62
+"Calça",2026-08-12,2026-08-04,0.25,319,"Calça Básica","Percentual",46,95,106.52
+"Bermuda",2026-04-04,2026-03-29,0.35,320,"Bermuda Slim","Valor Fixo",23,32,39.13
+"Blusa",2026-05-29,2026-05-19,0.13,321,"Blusa Casual","Percentual",54,96,77.78
+"Bermuda",2026-06-23,2026-06-12,0.25,322,"Bermuda Casual","Valor Fixo",16,23,43.75
+"Bermuda",2026-05-02,2026-04-24,0.21,323,"Bermuda Básica","Percentual",24,44,83.33
+"Camiseta",2026-05-12,2026-05-05,0.32,324,"Camiseta Slim","Valor Fixo",49,97,97.96
+"Camiseta",2026-07-23,2026-07-12,0.11,325,"Camiseta Slim","Valor Fixo",42,103,145.24
+"Vestido",2026-04-10,2026-04-04,0.32,326,"Vestido X","Valor Fixo",44,69,56.82
+"Camiseta",2026-03-22,2026-03-06,0.19,327,"Camiseta X","Valor Fixo",41,54,31.71
+"Acessório",2026-07-10,2026-06-30,0.16,328,"Acessório Esporte","Valor Fixo",53,92,73.58
+"Camiseta",2026-08-25,2026-08-20,0.11,329,"Camiseta Esporte","Percentual",59,142,140.68
+"Vestido",2026-09-03,2026-08-27,0.26,330,"Vestido Casual","Valor Fixo",19,28,47.37
+"Camiseta",2026-07-29,2026-07-24,0.28,331,"Camiseta Básica","Valor Fixo",21,40,90.48
+"Vestido",2026-07-09,2026-06-30,0.26,332,"Vestido Casual","Valor Fixo",50,92,84
+"Acessório",2026-07-28,2026-07-17,0.2,333,"Acessório X","Valor Fixo",46,73,58.7
+"Blusa",2026-04-07,2026-03-26,0.16,334,"Blusa X","Percentual",18,43,138.89
+"Vestido",2026-04-10,2026-03-23,0.12,335,"Vestido Social","Valor Fixo",30,50,66.67
+"Vestido",2026-05-18,2026-05-02,0.13,336,"Vestido Esporte","Percentual",37,73,97.3
+"Blusa",2026-03-30,2026-03-15,0.24,337,"Blusa Básica","Valor Fixo",55,106,92.73
+"Vestido",2026-07-08,2026-06-25,0.33,338,"Vestido Básica","Valor Fixo",52,119,128.85
+"Calça",2026-03-29,2026-03-19,0.31,339,"Calça Slim","Valor Fixo",35,79,125.71
+"Camiseta",2026-10-31,2026-10-15,0.31,340,"Camiseta X","Percentual",50,76,52
+"Bermuda",2026-08-31,2026-08-16,0.35,341,"Bermuda Esporte","Percentual",20,47,135
+"Calça",2026-10-10,2026-09-25,0.12,342,"Calça Esporte","Percentual",35,62,77.14
+"Acessório",2026-07-11,2026-07-01,0.3,343,"Acessório Básica","Valor Fixo",21,44,109.52
+"Jaqueta",2026-11-06,2026-10-28,0.33,344,"Jaqueta X","Percentual",53,126,137.74
+"Camiseta",2026-07-06,2026-06-24,0.23,345,"Camiseta Premium","Valor Fixo",20,48,140
+"Acessório",2026-09-04,2026-08-16,0.14,346,"Acessório Casual","Percentual",28,52,85.71
+"Calça",2026-11-19,2026-10-30,0.16,347,"Calça Esporte","Percentual",48,91,89.58
+"Acessório",2026-03-08,2026-03-03,0.33,348,"Acessório Básica","Percentual",22,53,140.91
+"Vestido",2026-04-23,2026-04-15,0.34,349,"Vestido Social","Valor Fixo",25,42,68
+"Acessório",2026-05-06,2026-04-26,0.13,350,"Acessório Social","Valor Fixo",34,53,55.88
+"Bermuda",2026-10-25,2026-10-08,0.32,351,"Bermuda Básica","Percentual",15,32,113.33
+"Blusa",2026-05-02,2026-04-27,0.25,352,"Blusa Casual","Percentual",12,23,91.67
+"Jaqueta",2026-07-23,2026-07-04,0.13,353,"Jaqueta X","Valor Fixo",40,83,107.5
+"Vestido",2026-11-05,2026-10-23,0.18,354,"Vestido Casual","Valor Fixo",51,107,109.8
+"Calça",2026-07-13,2026-07-07,0.18,355,"Calça Slim","Percentual",47,76,61.7
+"Camiseta",2026-08-10,2026-08-05,0.15,356,"Camiseta Casual","Valor Fixo",57,132,131.58
+"Calça",2026-04-30,2026-04-20,0.24,357,"Calça Slim","Percentual",44,60,36.36
+"Camiseta",2026-06-07,2026-05-23,0.35,358,"Camiseta Básica","Percentual",43,67,55.81
+"Bermuda",2026-06-28,2026-06-14,0.21,359,"Bermuda Social","Percentual",18,31,72.22
+"Camiseta",2026-10-01,2026-09-22,0.17,360,"Camiseta Básica","Valor Fixo",46,76,65.22
+"Camiseta",2026-04-26,2026-04-15,0.13,361,"Camiseta X","Valor Fixo",56,123,119.64
+"Acessório",2026-03-17,2026-03-08,0.1,362,"Acessório Social","Valor Fixo",56,138,146.43
+"Calça",2026-05-12,2026-04-28,0.21,363,"Calça Premium","Percentual",42,91,116.67
+"Acessório",2026-10-05,2026-09-24,0.16,364,"Acessório Básica","Valor Fixo",27,62,129.63
+"Vestido",2026-05-31,2026-05-12,0.13,365,"Vestido Casual","Percentual",28,37,32.14
+"Acessório",2026-03-22,2026-03-15,0.13,366,"Acessório X","Percentual",36,50,38.89
+"Jaqueta",2026-10-19,2026-10-04,0.26,367,"Jaqueta Premium","Valor Fixo",53,115,116.98
+"Camiseta",2026-07-09,2026-06-23,0.15,368,"Camiseta Premium","Percentual",12,20,66.67
+"Vestido",2026-09-29,2026-09-24,0.21,369,"Vestido Social","Valor Fixo",45,64,42.22
+"Calça",2026-06-21,2026-06-15,0.22,370,"Calça Casual","Percentual",58,95,63.79
+"Acessório",2026-06-25,2026-06-06,0.24,371,"Acessório X","Valor Fixo",58,76,31.03
+"Camiseta",2026-08-17,2026-08-02,0.28,372,"Camiseta Social","Valor Fixo",29,42,44.83
+"Jaqueta",2026-05-30,2026-05-12,0.34,373,"Jaqueta X","Percentual",25,40,60
+"Vestido",2026-04-24,2026-04-10,0.35,374,"Vestido Básica","Valor Fixo",50,80,60
+"Calça",2026-08-20,2026-08-03,0.25,375,"Calça Premium","Percentual",14,27,92.86
+"Calça",2026-04-26,2026-04-09,0.21,376,"Calça Slim","Percentual",25,38,52
+"Jaqueta",2026-07-02,2026-06-22,0.15,377,"Jaqueta Slim","Percentual",43,94,118.6
+"Jaqueta",2026-11-05,2026-10-28,0.24,378,"Jaqueta Casual","Percentual",44,76,72.73
+"Bermuda",2026-08-10,2026-07-22,0.27,379,"Bermuda Casual","Valor Fixo",30,48,60
+"Bermuda",2026-09-05,2026-08-29,0.11,380,"Bermuda Básica","Valor Fixo",12,21,75
+"Calça",2026-10-23,2026-10-16,0.17,381,"Calça Social","Valor Fixo",16,26,62.5
+"Jaqueta",2026-10-03,2026-09-18,0.13,382,"Jaqueta Slim","Valor Fixo",11,14,27.27
+"Bermuda",2026-07-25,2026-07-11,0.11,383,"Bermuda Casual","Percentual",23,54,134.78
+"Jaqueta",2026-06-23,2026-06-11,0.19,384,"Jaqueta Social","Percentual",60,90,50
+"Bermuda",2026-07-10,2026-06-22,0.25,385,"Bermuda Básica","Valor Fixo",47,84,78.72
+"Blusa",2026-04-07,2026-03-26,0.26,386,"Blusa Slim","Percentual",16,29,81.25
+"Vestido",2026-08-14,2026-08-01,0.25,387,"Vestido Social","Percentual",18,37,105.56
+"Calça",2026-07-27,2026-07-17,0.35,388,"Calça Premium","Valor Fixo",17,36,111.76
+"Bermuda",2026-04-01,2026-03-25,0.28,389,"Bermuda X","Valor Fixo",57,138,142.11
+"Jaqueta",2026-08-08,2026-08-01,0.18,390,"Jaqueta Social","Valor Fixo",14,34,142.86
+"Vestido",2026-07-02,2026-06-15,0.34,391,"Vestido Esporte","Valor Fixo",30,44,46.67
+"Camiseta",2026-03-23,2026-03-09,0.29,392,"Camiseta Premium","Valor Fixo",42,101,140.48
+"Vestido",2026-06-01,2026-05-25,0.31,393,"Vestido Social","Percentual",32,63,96.88
+"Camiseta",2026-08-08,2026-07-26,0.19,394,"Camiseta Casual","Percentual",13,18,38.46
+"Acessório",2026-04-25,2026-04-15,0.26,395,"Acessório Básica","Percentual",23,43,86.96
+"Camiseta",2026-08-29,2026-08-13,0.34,396,"Camiseta Slim","Percentual",18,34,88.89
+"Bermuda",2026-11-14,2026-10-30,0.17,397,"Bermuda Básica","Percentual",12,24,100
+"Jaqueta",2026-07-12,2026-07-04,0.27,398,"Jaqueta Social","Percentual",37,77,108.11
+"Vestido",2026-05-29,2026-05-20,0.13,399,"Vestido Premium","Valor Fixo",53,89,67.92
+"Camiseta",2026-08-05,2026-07-16,0.21,400,"Camiseta Premium","Percentual",27,41,51.85
+"Bermuda",2026-08-09,2026-08-03,0.35,401,"Bermuda Slim","Percentual",12,19,58.33
+"Calça",2026-05-28,2026-05-13,0.35,402,"Calça Premium","Percentual",16,33,106.25
+"Calça",2026-09-09,2026-08-31,0.17,403,"Calça Premium","Valor Fixo",57,102,78.95
+"Calça",2026-04-28,2026-04-09,0.17,404,"Calça Social","Valor Fixo",26,45,73.08
+"Calça",2026-06-11,2026-05-30,0.22,405,"Calça Esporte","Percentual",13,25,92.31
+"Blusa",2026-10-16,2026-09-27,0.28,406,"Blusa Esporte","Valor Fixo",34,61,79.41
+"Vestido",2026-04-24,2026-04-09,0.13,407,"Vestido Social","Valor Fixo",33,58,75.76
+"Calça",2026-03-25,2026-03-17,0.22,408,"Calça Esporte","Valor Fixo",58,136,134.48
+"Camiseta",2026-10-06,2026-09-21,0.24,409,"Camiseta Básica","Percentual",46,89,93.48
+"Bermuda",2026-08-21,2026-08-13,0.19,410,"Bermuda Esporte","Percentual",39,77,97.44
+"Acessório",2026-09-24,2026-09-17,0.29,411,"Acessório Casual","Percentual",20,43,115
+"Calça",2026-07-08,2026-06-27,0.33,412,"Calça Esporte","Valor Fixo",59,145,145.76
+"Jaqueta",2026-06-03,2026-05-22,0.14,413,"Jaqueta X","Percentual",33,62,87.88
+"Vestido",2026-10-26,2026-10-18,0.15,414,"Vestido X","Percentual",47,81,72.34
+"Blusa",2026-10-16,2026-10-08,0.24,415,"Blusa Slim","Percentual",34,74,117.65
+"Blusa",2026-10-11,2026-10-02,0.19,416,"Blusa Slim","Percentual",39,79,102.56
+"Calça",2026-06-18,2026-06-05,0.17,417,"Calça Premium","Valor Fixo",37,51,37.84
+"Acessório",2026-08-13,2026-07-31,0.15,418,"Acessório Premium","Percentual",50,69,38
+"Camiseta",2026-09-26,2026-09-21,0.15,419,"Camiseta Casual","Valor Fixo",47,77,63.83
+"Calça",2026-08-28,2026-08-18,0.33,420,"Calça Esporte","Percentual",14,18,28.57
+"Bermuda",2026-10-12,2026-09-30,0.29,421,"Bermuda Básica","Valor Fixo",39,56,43.59
+"Blusa",2026-07-02,2026-06-23,0.18,422,"Blusa X","Percentual",37,86,132.43
+"Acessório",2026-10-12,2026-10-04,0.27,423,"Acessório Social","Percentual",15,28,86.67
+"Vestido",2026-04-01,2026-03-27,0.12,424,"Vestido X","Valor Fixo",47,77,63.83
+"Blusa",2026-04-25,2026-04-07,0.15,425,"Blusa X","Percentual",51,105,105.88
+"Camiseta",2026-11-03,2026-10-15,0.29,426,"Camiseta Básica","Valor Fixo",37,83,124.32
+"Acessório",2026-08-03,2026-07-24,0.27,427,"Acessório Premium","Valor Fixo",15,20,33.33
+"Calça",2026-10-02,2026-09-20,0.34,428,"Calça Esporte","Valor Fixo",15,21,40
+"Camiseta",2026-06-02,2026-05-13,0.2,429,"Camiseta Casual","Percentual",48,80,66.67
+"Calça",2026-06-12,2026-05-27,0.17,430,"Calça Premium","Percentual",32,75,134.38
+"Camiseta",2026-04-07,2026-03-21,0.21,431,"Camiseta Premium","Valor Fixo",40,98,145
+"Calça",2026-10-29,2026-10-20,0.25,432,"Calça Social","Percentual",45,103,128.89
+"Jaqueta",2026-05-11,2026-04-22,0.15,433,"Jaqueta Premium","Valor Fixo",46,63,36.96
+"Bermuda",2026-06-05,2026-05-18,0.25,434,"Bermuda Casual","Valor Fixo",56,101,80.36
+"Jaqueta",2026-09-12,2026-09-06,0.11,435,"Jaqueta Social","Valor Fixo",57,100,75.44
+"Bermuda",2026-03-22,2026-03-05,0.21,436,"Bermuda Social","Valor Fixo",12,17,41.67
+"Blusa",2026-04-29,2026-04-21,0.24,437,"Blusa X","Valor Fixo",49,90,83.67
+"Calça",2026-10-16,2026-09-29,0.24,438,"Calça Esporte","Percentual",53,126,137.74
+"Blusa",2026-05-28,2026-05-10,0.16,439,"Blusa Básica","Valor Fixo",41,82,100
+"Vestido",2026-08-11,2026-07-31,0.16,440,"Vestido X","Percentual",34,73,114.71
+"Blusa",2026-07-15,2026-06-27,0.24,441,"Blusa Básica","Percentual",59,126,113.56
+"Calça",2026-07-20,2026-07-10,0.14,442,"Calça Básica","Percentual",28,42,50
+"Jaqueta",2026-03-28,2026-03-19,0.24,443,"Jaqueta Casual","Valor Fixo",12,25,108.33
+"Vestido",2026-06-25,2026-06-14,0.19,444,"Vestido Básica","Percentual",37,52,40.54
+"Acessório",2026-07-27,2026-07-08,0.26,445,"Acessório Social","Percentual",34,54,58.82
+"Blusa",2026-03-25,2026-03-17,0.16,446,"Blusa Premium","Percentual",10,24,140
+"Camiseta",2026-07-02,2026-06-27,0.31,447,"Camiseta Esporte","Valor Fixo",60,140,133.33
+"Bermuda",2026-07-04,2026-06-27,0.15,448,"Bermuda Social","Valor Fixo",52,92,76.92
+"Calça",2026-05-22,2026-05-03,0.32,449,"Calça Básica","Percentual",14,21,50
+"Jaqueta",2026-09-15,2026-08-26,0.18,450,"Jaqueta X","Percentual",12,21,75
+"Blusa",2026-04-28,2026-04-14,0.18,451,"Blusa Premium","Percentual",47,69,46.81
+"Calça",2026-10-18,2026-10-03,0.33,452,"Calça Social","Valor Fixo",38,89,134.21
+"Calça",2026-11-11,2026-10-24,0.14,453,"Calça Esporte","Percentual",18,42,133.33
+"Calça",2026-04-15,2026-03-29,0.25,454,"Calça Básica","Percentual",40,58,45
+"Vestido",2026-08-17,2026-08-09,0.16,455,"Vestido Básica","Percentual",41,86,109.76
+"Jaqueta",2026-04-24,2026-04-10,0.23,456,"Jaqueta Slim","Percentual",12,29,141.67
+"Blusa",2026-08-18,2026-08-07,0.22,457,"Blusa Social","Valor Fixo",25,39,56
+"Blusa",2026-08-23,2026-08-17,0.16,458,"Blusa Social","Percentual",38,79,107.89
+"Camiseta",2026-05-08,2026-04-24,0.34,459,"Camiseta Esporte","Valor Fixo",30,51,70
+"Calça",2026-06-27,2026-06-22,0.32,460,"Calça Esporte","Valor Fixo",46,114,147.83
+"Blusa",2026-05-08,2026-04-23,0.14,461,"Blusa Premium","Valor Fixo",51,116,127.45
+"Jaqueta",2026-08-04,2026-07-27,0.24,462,"Jaqueta Slim","Percentual",52,121,132.69
+"Camiseta",2026-10-05,2026-09-29,0.24,463,"Camiseta Esporte","Valor Fixo",47,71,51.06
+"Vestido",2026-10-20,2026-10-15,0.24,464,"Vestido Social","Percentual",36,52,44.44
+"Camiseta",2026-09-28,2026-09-14,0.19,465,"Camiseta X","Percentual",14,32,128.57
+"Vestido",2026-06-17,2026-06-10,0.23,466,"Vestido Casual","Valor Fixo",13,30,130.77
+"Bermuda",2026-07-12,2026-06-25,0.22,467,"Bermuda Premium","Valor Fixo",44,93,111.36
+"Calça",2026-10-11,2026-10-03,0.29,468,"Calça Social","Percentual",44,109,147.73
+"Jaqueta",2026-10-07,2026-09-21,0.3,469,"Jaqueta Casual","Valor Fixo",29,64,120.69
+"Calça",2026-08-13,2026-08-07,0.34,470,"Calça Casual","Percentual",26,52,100
+"Vestido",2026-04-27,2026-04-08,0.24,471,"Vestido Básica","Percentual",55,111,101.82
+"Camiseta",2026-04-02,2026-03-19,0.13,472,"Camiseta Esporte","Valor Fixo",35,50,42.86
+"Jaqueta",2026-03-14,2026-03-05,0.3,473,"Jaqueta Casual","Valor Fixo",22,46,109.09
+"Calça",2026-07-31,2026-07-18,0.33,474,"Calça Casual","Percentual",52,95,82.69
+"Calça",2026-06-15,2026-05-30,0.13,475,"Calça Premium","Valor Fixo",53,112,111.32
+"Jaqueta",2026-08-19,2026-08-06,0.32,476,"Jaqueta X","Percentual",59,132,123.73
+"Calça",2026-06-30,2026-06-23,0.18,477,"Calça Premium","Valor Fixo",46,68,47.83
+"Acessório",2026-06-28,2026-06-22,0.15,478,"Acessório Social","Percentual",54,92,70.37
+"Blusa",2026-10-01,2026-09-21,0.3,479,"Blusa X","Valor Fixo",39,69,76.92
+"Acessório",2026-08-02,2026-07-22,0.12,480,"Acessório Básica","Valor Fixo",49,71,44.9
+"Vestido",2026-06-12,2026-05-29,0.32,481,"Vestido Básica","Percentual",18,33,83.33
+"Calça",2026-05-29,2026-05-09,0.32,482,"Calça Premium","Valor Fixo",45,68,51.11
+"Blusa",2026-04-01,2026-03-25,0.35,483,"Blusa X","Percentual",37,56,51.35
+"Jaqueta",2026-07-02,2026-06-15,0.26,484,"Jaqueta Básica","Percentual",33,52,57.58
+"Blusa",2026-04-09,2026-03-22,0.25,485,"Blusa Casual","Valor Fixo",29,42,44.83
+"Jaqueta",2026-07-22,2026-07-04,0.15,486,"Jaqueta Básica","Percentual",39,57,46.15
+"Jaqueta",2026-05-19,2026-04-30,0.28,487,"Jaqueta X","Percentual",51,113,121.57
+"Camiseta",2026-07-07,2026-06-17,0.33,488,"Camiseta Esporte","Percentual",37,84,127.03
+"Jaqueta",2026-08-17,2026-07-30,0.17,489,"Jaqueta Esporte","Percentual",14,33,135.71
+"Vestido",2026-07-11,2026-06-26,0.3,490,"Vestido X","Percentual",16,29,81.25
+"Acessório",2026-09-18,2026-09-07,0.26,491,"Acessório Casual","Percentual",54,82,51.85
+"Camiseta",2026-09-11,2026-08-26,0.16,492,"Camiseta Social","Valor Fixo",14,22,57.14
+"Bermuda",2026-10-17,2026-10-07,0.32,493,"Bermuda Básica","Valor Fixo",12,17,41.67
+"Vestido",2026-05-25,2026-05-07,0.13,494,"Vestido X","Percentual",23,50,117.39
+"Vestido",2026-08-21,2026-08-03,0.14,495,"Vestido Social","Percentual",31,65,109.68
+"Calça",2026-04-22,2026-04-08,0.35,496,"Calça Slim","Percentual",14,23,64.29
+"Jaqueta",2026-08-18,2026-08-06,0.32,497,"Jaqueta Premium","Valor Fixo",41,91,121.95
+"Calça",2026-08-16,2026-07-30,0.25,498,"Calça Básica","Valor Fixo",36,65,80.56
+"Vestido",2026-04-19,2026-04-08,0.13,499,"Vestido Casual","Percentual",52,109,109.62
+"Jaqueta",2026-09-13,2026-09-04,0.14,500,"Jaqueta Básica","Percentual",15,30,100

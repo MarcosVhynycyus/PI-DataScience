@@ -1,26 +1,26 @@
-"id_vendedor","nome","cidade_loja","data_contratacao","meta_mensal"
-1,"Lavínia Campos","Casa Branca",2024-01-15,25298.33
-2,"Nathan Guerra","São João da Boa Vista",2024-07-02,20963.97
-3,"Maria Clara da Cruz","São José do Rio Pardo",2026-09-08,16681.42
-4,"Isis Cirino","Casa Branca",2024-10-25,15947.76
-5,"João Marques","Mococa",2024-02-23,26786.21
-6,"Nicolas Fonseca","São José do Rio Pardo",2025-09-21,27513.96
-7,"Isabella Moreira","São João da Boa Vista",2024-07-24,22561.88
-8,"Alexandre da Mota","Mococa",2024-06-20,8154.52
-9,"Hellena Nogueira","São José do Rio Pardo",2026-06-05,15965.06
-10,"Marcela Macedo","São João da Boa Vista",2025-11-17,24721.4
-11,"Jade Garcia","Tambaú",2025-12-22,12491.1
-12,"Luiz Henrique Sales","Aguaí",2024-05-09,17114.58
-13,"Enzo Martins","São José do Rio Pardo",2024-01-08,11991.74
-14,"Ryan Cardoso","Mococa",2024-11-10,8036.48
-15,"Eduardo Aragão","Mococa",2024-10-02,18553.13
-16,"Enzo Caldeira","Mococa",2025-01-29,10765.8
-17,"Maria Clara Machado","Casa Branca",2025-05-05,28969.3
-18,"Nathan Monteiro","Casa Branca",2025-09-30,18322.53
-19,"Isabela Rocha","São João da Boa Vista",2025-07-27,11977.28
-20,"Marcela Campos","São João da Boa Vista",2024-06-21,19659.25
-21,"Brenda Martins","São João da Boa Vista",2026-06-08,12272.1
-22,"Laura Melo","Vargem Grande do Sul",2025-04-19,18196.93
-23,"Brenda Ribeiro","Vargem Grande do Sul",2025-02-11,14134.73
-24,"João Gabriel Monteiro","Casa Branca",2025-07-09,12792.98
-25,"Mateus Pires","Casa Branca",2026-01-23,27984.35
+"cidade_loja","data_contratacao","id_vendedor","meta_mensal","nome"
+"São João da Boa Vista",2024-04-01,1,26532.37,"Dr. João Miguel Peixoto"
+"São José do Rio Pardo",2025-02-17,2,16239.34,"Cecília Freitas"
+"Vargem Grande do Sul",2025-07-18,3,20726.16,"Dr. Fernando Pastor"
+"São João da Boa Vista",2024-10-15,4,27514.08,"Benício Souza"
+"Tambaú",2024-08-15,5,22780.34,"Antony Garcia"
+"Casa Branca",2024-09-06,6,10667.01,"Dr. Luiz Felipe Costela"
+"São João da Boa Vista",2026-10-23,7,25797.52,"Pedro Lucas Pimenta"
+"Tambaú",2024-12-23,8,27843.68,"Pedro Miguel Cavalcanti"
+"Itobi",2026-02-21,9,12059.15,"Maria Alice da Rosa"
+"Casa Branca",2025-03-18,10,29112.77,"Vicente Viana"
+"Casa Branca",2024-08-08,11,20954.68,"Emilly Rodrigues"
+"Itobi",2025-04-06,12,20643.14,"Valentim da Paz"
+"Mococa",2026-03-24,13,19111.92,"Pedro Henrique Aragão"
+"Tambaú",2024-06-22,14,21852.32,"Dr. Enzo Freitas"
+"Vargem Grande do Sul",2024-05-12,15,18940.74,"Sophia da Mata"
+"Tambaú",2025-04-28,16,29445.01,"Ana Sophia Pires"
+"São José do Rio Pardo",2026-01-18,17,12597.04,"Murilo Jesus"
+"Casa Branca",2024-05-04,18,14708.34,"Matheus Nunes"
+"Casa Branca",2026-02-18,19,22752.58,"Breno Gomes"
+"Tambaú",2024-03-24,20,16948.64,"João Lima"
+"Tambaú",2024-08-29,21,13630.48,"Danilo das Neves"
+"São José do Rio Pardo",2024-11-07,22,27551.62,"Manuella Macedo"
+"Casa Branca",2026-05-29,23,16078.92,"Vitória Farias"
+"Vargem Grande do Sul",2025-07-18,24,28942.94,"Sofia Fonseca"
+"Mococa",2026-06-09,25,23616.72,"Bento Oliveira"

@@ -1,3 +1,8 @@
 infra/iac/*.img
 .venv
 .idea
+infra/iac/*.terraform.lock.hcl
+infra/iac/.terraform
+infra/iac/*.tfstate.backup
+infra/iac/*.tfplan
+infra/iac/*.tfstate
