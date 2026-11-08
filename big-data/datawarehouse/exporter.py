@@ -45,7 +45,7 @@ def sqlite_to_csv(db_path: str, output_dir: str = "./csv") -> None:
     print("\nExportação concluída com sucesso!")
 
 if __name__ == "__main__":
-    NOME_DO_BANCO = "./DA/datawarehouse/datawarehouse.db"
+    NOME_DO_BANCO = "./big-data/datawarehouse/datawarehouse.db"
     
     if os.path.exists(NOME_DO_BANCO):
         sqlite_to_csv(NOME_DO_BANCO, output_dir="./DA/datawarehouse/csv")

@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 # Diretórios de origem e destino
-INPUT_DIR = "./DA/datalake/raw_data"
-OUTPUT_DIR = "./DA/datalake/clean_data"
+INPUT_DIR = "./big-data/datalake/raw_data"
+OUTPUT_DIR = "./big-data/datalake/clean_data"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def fix_mojibake_and_strip(text):

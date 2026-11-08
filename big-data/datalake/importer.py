@@ -9,7 +9,7 @@ crediario_url = "http://192.168.122.92:5000/api/tabelas/crediario"
 promocoes_url = "http://192.168.122.92:5000/api/tabelas/promocoes"
 estoque_url = "http://192.168.122.92:5000/api/tabelas/estoque"
 
-output_dir = "./DA/datalake/raw_data"
+output_dir = "./big-data/datalake/raw_data"
 
 vendas_file_path = os.path.join(output_dir, "vendas.csv")
 vendedores_file_path = os.path.join(output_dir, "vendedores.csv")
