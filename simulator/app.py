@@ -33,7 +33,7 @@ def get_tabela(nome_tabela):
     if nome_tabela not in tabelas_validas:
         return jsonify({"error": "Tabela inválida"}), 400
 
-    df = pd.read_sql(f"SELECT * FROM {nome_tabela} LIMIT 500", engine)
+    df = pd.read_sql(f"SELECT * FROM {nome_tabela}", engine)
     return jsonify(df.to_dict(orient="records")), 200
 
 @app.route("/api/tabelas/all", methods=["GET"])

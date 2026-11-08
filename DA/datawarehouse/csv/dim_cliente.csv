@@ -1,0 +1,501 @@
+id_cliente,cidade,idade,canal_preferencial,data_cadastro
+1,São José do Rio Pardo,47,Online,2024-08-04
+2,São João da Boa Vista,52,Física,2026-05-19
+3,São João da Boa Vista,23,Online,2024-01-10
+4,Vargem Grande do Sul,40,Física,2024-04-09
+5,Tambaú,65,Física,2024-09-11
+6,Casa Branca,48,Online,2024-10-01
+7,Tambaú,43,Física,2025-03-04
+8,Aguaí,47,Física,2026-05-01
+9,Casa Branca,57,Online,2025-06-10
+10,Aguaí,32,Física,2024-07-08
+11,Mococa,36,Online,2024-06-30
+12,Tambaú,29,Online,2026-06-16
+13,Itobi,31,Online,2025-07-22
+14,Vargem Grande do Sul,68,Física,2024-03-01
+15,Vargem Grande do Sul,59,Física,2024-08-28
+16,São João da Boa Vista,28,Física,2025-02-22
+17,São José do Rio Pardo,43,Física,2026-02-11
+18,Itobi,60,Física,2025-11-01
+19,Vargem Grande do Sul,50,Online,2024-08-27
+20,Aguaí,49,Física,2026-06-03
+21,Vargem Grande do Sul,35,Online,2024-08-31
+22,Itobi,74,Física,2025-02-09
+23,Vargem Grande do Sul,20,Online,2026-03-20
+24,Mococa,45,Física,2025-03-28
+25,São José do Rio Pardo,26,Física,2024-12-29
+26,São João da Boa Vista,32,Física,2024-08-23
+27,Mococa,55,Online,2025-09-08
+28,Mococa,28,Física,2024-03-01
+29,Tambaú,22,Online,2026-03-28
+30,São José do Rio Pardo,41,Online,2026-01-06
+31,Tambaú,38,Física,2025-03-20
+32,São José do Rio Pardo,26,Online,2025-01-08
+33,Vargem Grande do Sul,45,Física,2026-04-03
+34,Itobi,61,Online,2026-09-04
+35,Itobi,45,Online,2025-07-27
+36,Tambaú,20,Física,2026-01-15
+37,Aguaí,23,Física,2024-07-10
+38,Mococa,43,Física,2026-10-09
+39,Vargem Grande do Sul,61,Online,2025-07-10
+40,Itobi,71,Física,2026-01-31
+41,Aguaí,40,Online,2026-01-05
+42,São João da Boa Vista,43,Física,2024-08-14
+43,Mococa,42,Física,2025-09-15
+44,São José do Rio Pardo,29,Online,2025-03-09
+45,Aguaí,55,Online,2026-09-03
+46,Vargem Grande do Sul,22,Física,2024-03-30
+47,São João da Boa Vista,48,Online,2024-10-09
+48,São João da Boa Vista,55,Física,2025-03-19
+49,Itobi,72,Online,2026-11-04
+50,São José do Rio Pardo,50,Online,2025-04-24
+51,Mococa,24,Física,2024-10-03
+52,Casa Branca,62,Física,2024-11-08
+53,Itobi,67,Online,2025-08-23
+54,Aguaí,21,Online,2024-09-28
+55,Itobi,26,Física,2026-09-07
+56,Vargem Grande do Sul,63,Física,2024-09-12
+57,Mococa,20,Online,2025-07-05
+58,Mococa,24,Online,2026-06-10
+59,Casa Branca,74,Física,2024-04-24
+60,Aguaí,55,Física,2026-10-27
+61,São João da Boa Vista,39,Física,2026-06-18
+62,São José do Rio Pardo,59,Física,2026-02-23
+63,São João da Boa Vista,51,Física,2024-01-02
+64,Mococa,62,Física,2026-10-31
+65,Tambaú,60,Física,2025-10-20
+66,Casa Branca,63,Online,2026-02-10
+67,Itobi,41,Física,2025-07-28
+68,Itobi,45,Física,2025-12-16
+69,Itobi,60,Física,2024-02-04
+70,São José do Rio Pardo,23,Online,2024-09-14
+71,Mococa,27,Online,2026-06-20
+72,Aguaí,27,Física,2024-11-05
+73,Vargem Grande do Sul,19,Física,2025-09-29
+74,Tambaú,62,Física,2024-02-06
+75,São José do Rio Pardo,59,Online,2025-11-07
+76,Mococa,55,Online,2025-06-10
+77,Mococa,36,Física,2026-04-20
+78,Casa Branca,30,Online,2024-09-08
+79,São João da Boa Vista,34,Online,2025-03-01
+80,Casa Branca,39,Online,2024-11-29
+81,Itobi,66,Física,2024-10-29
+82,São José do Rio Pardo,69,Online,2024-03-04
+83,Itobi,28,Online,2026-01-21
+84,São João da Boa Vista,56,Online,2026-07-08
+85,Tambaú,49,Online,2024-07-12
+86,São João da Boa Vista,40,Física,2026-01-06
+87,São José do Rio Pardo,27,Física,2026-01-30
+88,Itobi,63,Online,2026-07-19
+89,Casa Branca,45,Online,2025-07-15
+90,Tambaú,45,Online,2025-11-21
+91,Casa Branca,47,Física,2025-07-16
+92,Aguaí,34,Online,2026-10-24
+93,Tambaú,21,Online,2024-08-24
+94,Tambaú,45,Online,2025-09-10
+95,Tambaú,35,Online,2024-01-15
+96,Tambaú,41,Online,2025-09-28
+97,Mococa,68,Online,2026-08-08
+98,Vargem Grande do Sul,66,Online,2024-03-15
+99,Tambaú,39,Online,2024-06-07
+100,Itobi,23,Online,2025-04-09
+101,Aguaí,29,Física,2026-03-19
+102,São João da Boa Vista,56,Física,2024-06-08
+103,São João da Boa Vista,65,Física,2024-05-04
+104,Aguaí,61,Física,2025-06-14
+105,Aguaí,40,Online,2026-06-07
+106,Mococa,61,Física,2025-04-25
+107,Casa Branca,41,Física,2024-12-22
+108,Mococa,25,Física,2026-03-22
+109,Itobi,54,Física,2025-08-24
+110,São João da Boa Vista,66,Física,2024-12-20
+111,São José do Rio Pardo,72,Online,2026-10-25
+112,Vargem Grande do Sul,38,Online,2025-02-02
+113,Itobi,73,Online,2025-04-24
+114,Vargem Grande do Sul,50,Online,2025-02-24
+115,São José do Rio Pardo,22,Física,2025-07-15
+116,Itobi,40,Online,2025-03-29
+117,Casa Branca,45,Física,2026-07-19
+118,São João da Boa Vista,67,Online,2024-01-23
+119,São José do Rio Pardo,23,Online,2026-04-20
+120,Tambaú,65,Física,2025-05-27
+121,São José do Rio Pardo,57,Online,2025-06-13
+122,Itobi,20,Física,2024-03-27
+123,Mococa,45,Física,2025-02-20
+124,Casa Branca,62,Online,2024-07-01
+125,Tambaú,56,Física,2024-09-13
+126,Mococa,50,Online,2025-08-06
+127,Vargem Grande do Sul,46,Online,2026-08-07
+128,São José do Rio Pardo,58,Online,2025-08-06
+129,Aguaí,51,Física,2025-12-18
+130,Mococa,45,Física,2025-06-10
+131,Itobi,27,Física,2024-06-06
+132,Mococa,29,Física,2026-02-22
+133,Itobi,24,Online,2025-01-26
+134,Itobi,64,Online,2025-09-11
+135,São João da Boa Vista,20,Física,2024-05-10
+136,Casa Branca,62,Física,2024-09-01
+137,Mococa,23,Online,2024-03-26
+138,São José do Rio Pardo,45,Física,2025-09-25
+139,Casa Branca,30,Física,2026-09-17
+140,Casa Branca,55,Online,2024-04-28
+141,Casa Branca,45,Online,2026-04-18
+142,Vargem Grande do Sul,47,Online,2025-05-02
+143,Vargem Grande do Sul,70,Física,2024-09-22
+144,Tambaú,20,Física,2024-03-09
+145,Casa Branca,74,Online,2025-04-19
+146,Mococa,18,Física,2025-09-07
+147,Aguaí,49,Física,2024-03-19
+148,Aguaí,70,Online,2024-12-12
+149,Casa Branca,41,Online,2026-09-09
+150,Itobi,52,Física,2024-07-26
+151,Aguaí,54,Física,2026-04-07
+152,São José do Rio Pardo,45,Física,2024-02-13
+153,Vargem Grande do Sul,74,Online,2024-04-30
+154,Tambaú,21,Física,2025-03-02
+155,Vargem Grande do Sul,68,Física,2025-11-29
+156,São João da Boa Vista,59,Online,2026-02-25
+157,Tambaú,55,Online,2024-07-21
+158,Tambaú,35,Física,2024-03-24
+159,Vargem Grande do Sul,33,Física,2026-10-21
+160,Mococa,44,Online,2025-09-21
+161,Vargem Grande do Sul,29,Online,2026-10-05
+162,Aguaí,60,Física,2024-02-28
+163,Tambaú,44,Física,2025-04-24
+164,Casa Branca,19,Online,2025-05-22
+165,São José do Rio Pardo,59,Online,2024-02-23
+166,Tambaú,69,Online,2025-08-20
+167,Itobi,46,Física,2024-11-11
+168,Mococa,74,Física,2024-05-27
+169,Tambaú,45,Online,2024-04-05
+170,Aguaí,32,Online,2025-07-01
+171,Itobi,28,Física,2024-11-02
+172,São João da Boa Vista,26,Online,2024-05-03
+173,Vargem Grande do Sul,38,Online,2026-05-23
+174,Casa Branca,51,Online,2025-05-17
+175,Mococa,50,Física,2024-11-09
+176,Vargem Grande do Sul,45,Física,2026-09-11
+177,Mococa,50,Física,2025-12-23
+178,Itobi,43,Física,2026-07-05
+179,Vargem Grande do Sul,54,Online,2024-03-25
+180,São José do Rio Pardo,21,Online,2024-05-03
+181,Tambaú,36,Física,2025-04-05
+182,Vargem Grande do Sul,63,Física,2024-01-19
+183,Vargem Grande do Sul,58,Online,2025-10-17
+184,Mococa,53,Física,2025-05-18
+185,São José do Rio Pardo,69,Física,2024-09-17
+186,Tambaú,34,Física,2025-08-19
+187,São João da Boa Vista,32,Online,2024-05-21
+188,Casa Branca,56,Física,2026-06-18
+189,Casa Branca,32,Online,2024-09-08
+190,Mococa,32,Física,2024-07-29
+191,Tambaú,31,Física,2026-03-30
+192,Itobi,48,Online,2024-03-16
+193,São José do Rio Pardo,70,Física,2024-11-12
+194,Tambaú,59,Online,2024-01-31
+195,Aguaí,48,Online,2025-05-21
+196,Casa Branca,19,Online,2024-03-28
+197,Mococa,63,Física,2025-05-21
+198,Itobi,54,Online,2025-06-23
+199,São José do Rio Pardo,70,Física,2024-02-06
+200,Aguaí,38,Online,2024-11-05
+201,Vargem Grande do Sul,70,Física,2025-02-19
+202,Casa Branca,45,Física,2025-03-16
+203,Mococa,42,Física,2024-05-01
+204,Vargem Grande do Sul,52,Física,2024-11-19
+205,Mococa,28,Física,2025-12-11
+206,Itobi,47,Online,2024-07-26
+207,Itobi,68,Física,2026-10-14
+208,São João da Boa Vista,31,Online,2026-04-13
+209,São João da Boa Vista,68,Online,2026-10-04
+210,Casa Branca,44,Física,2026-09-27
+211,Aguaí,52,Física,2026-03-16
+212,Itobi,29,Física,2025-10-12
+213,Tambaú,63,Física,2024-11-06
+214,São João da Boa Vista,58,Física,2024-05-14
+215,Tambaú,52,Online,2025-10-11
+216,Aguaí,18,Online,2025-07-01
+217,São João da Boa Vista,40,Online,2026-08-11
+218,São José do Rio Pardo,29,Física,2025-05-29
+219,Itobi,67,Online,2025-10-01
+220,Vargem Grande do Sul,37,Online,2026-09-20
+221,Tambaú,20,Online,2026-01-08
+222,Mococa,52,Física,2024-02-02
+223,São João da Boa Vista,35,Física,2026-04-01
+224,São José do Rio Pardo,45,Física,2026-10-02
+225,Itobi,19,Online,2024-06-15
+226,Itobi,25,Online,2024-06-30
+227,Casa Branca,48,Física,2025-01-06
+228,Itobi,61,Online,2025-06-22
+229,São João da Boa Vista,62,Física,2024-10-07
+230,São José do Rio Pardo,69,Física,2026-01-09
+231,São José do Rio Pardo,32,Online,2024-04-03
+232,Aguaí,73,Online,2025-11-03
+233,Mococa,23,Física,2026-10-26
+234,Mococa,68,Online,2026-02-22
+235,Itobi,50,Física,2025-12-22
+236,Tambaú,70,Física,2025-10-05
+237,São José do Rio Pardo,67,Online,2026-09-28
+238,São José do Rio Pardo,45,Física,2024-07-19
+239,São José do Rio Pardo,38,Física,2024-10-24
+240,Vargem Grande do Sul,42,Física,2026-03-17
+241,Tambaú,48,Física,2024-04-11
+242,São João da Boa Vista,23,Física,2024-08-12
+243,Aguaí,43,Física,2025-12-23
+244,Itobi,22,Física,2026-07-17
+245,Itobi,69,Online,2026-02-08
+246,Itobi,34,Online,2024-10-11
+247,Aguaí,39,Física,2026-05-16
+248,Tambaú,71,Online,2024-09-09
+249,Vargem Grande do Sul,35,Física,2025-02-06
+250,São João da Boa Vista,23,Online,2024-12-30
+251,Tambaú,52,Online,2026-03-10
+252,Tambaú,75,Online,2026-09-21
+253,Itobi,54,Física,2024-11-18
+254,Aguaí,63,Online,2025-08-02
+255,Tambaú,27,Física,2026-01-29
+256,Casa Branca,70,Online,2025-08-08
+257,São João da Boa Vista,53,Física,2025-03-23
+258,Casa Branca,75,Online,2025-06-29
+259,São João da Boa Vista,45,Física,2025-01-15
+260,Aguaí,45,Online,2024-02-20
+261,São José do Rio Pardo,67,Física,2025-02-04
+262,Vargem Grande do Sul,72,Física,2024-09-16
+263,Aguaí,46,Online,2026-07-08
+264,Vargem Grande do Sul,54,Física,2025-03-01
+265,Tambaú,35,Online,2026-03-18
+266,Tambaú,51,Física,2026-08-28
+267,São João da Boa Vista,55,Online,2025-02-02
+268,São João da Boa Vista,56,Física,2025-04-11
+269,São João da Boa Vista,32,Física,2025-11-09
+270,Tambaú,59,Física,2025-02-23
+271,Vargem Grande do Sul,73,Online,2026-05-09
+272,Itobi,48,Online,2024-06-23
+273,Vargem Grande do Sul,66,Física,2024-03-18
+274,Itobi,44,Online,2024-06-30
+275,Casa Branca,54,Online,2025-08-24
+276,São João da Boa Vista,69,Online,2026-02-01
+277,São João da Boa Vista,63,Física,2025-04-13
+278,Tambaú,22,Física,2024-08-06
+279,Itobi,45,Física,2025-06-30
+280,Aguaí,36,Online,2026-05-01
+281,São José do Rio Pardo,40,Online,2025-04-29
+282,Tambaú,34,Física,2026-01-14
+283,São João da Boa Vista,54,Online,2025-08-16
+284,Mococa,52,Física,2025-10-22
+285,São José do Rio Pardo,48,Física,2025-03-18
+286,Itobi,71,Física,2024-10-19
+287,Mococa,72,Física,2025-11-12
+288,Aguaí,24,Física,2025-01-04
+289,São João da Boa Vista,36,Física,2024-07-04
+290,São João da Boa Vista,20,Física,2024-05-22
+291,Tambaú,30,Física,2025-11-14
+292,São João da Boa Vista,45,Física,2026-05-06
+293,São José do Rio Pardo,49,Online,2025-06-19
+294,Aguaí,37,Física,2025-04-18
+295,Vargem Grande do Sul,23,Física,2025-07-26
+296,São José do Rio Pardo,50,Física,2025-10-04
+297,São José do Rio Pardo,43,Física,2024-09-22
+298,Tambaú,53,Física,2024-02-12
+299,Itobi,52,Online,2026-06-19
+300,São José do Rio Pardo,37,Física,2025-03-25
+301,Tambaú,42,Física,2025-04-07
+302,Mococa,62,Online,2026-05-11
+303,São João da Boa Vista,27,Online,2024-09-08
+304,Vargem Grande do Sul,47,Online,2024-12-09
+305,Aguaí,53,Online,2026-11-04
+306,Aguaí,58,Física,2026-04-08
+307,Tambaú,25,Física,2024-03-01
+308,Tambaú,45,Online,2024-01-21
+309,Vargem Grande do Sul,41,Física,2024-02-25
+310,Itobi,60,Física,2024-09-20
+311,São João da Boa Vista,39,Física,2026-06-04
+312,Casa Branca,47,Online,2024-08-24
+313,Mococa,18,Online,2024-09-07
+314,Tambaú,21,Física,2025-09-18
+315,São José do Rio Pardo,28,Online,2025-07-28
+316,Tambaú,62,Online,2024-09-10
+317,Vargem Grande do Sul,36,Online,2025-04-19
+318,São João da Boa Vista,33,Online,2026-03-02
+319,São José do Rio Pardo,39,Online,2024-02-01
+320,Tambaú,40,Física,2024-05-17
+321,São José do Rio Pardo,24,Online,2024-04-29
+322,São José do Rio Pardo,23,Física,2024-12-24
+323,Mococa,22,Física,2024-04-30
+324,São José do Rio Pardo,75,Online,2026-03-12
+325,Aguaí,61,Online,2026-03-30
+326,Itobi,56,Física,2024-11-19
+327,Aguaí,28,Online,2026-01-23
+328,São José do Rio Pardo,74,Física,2024-02-23
+329,Itobi,45,Física,2026-07-17
+330,São José do Rio Pardo,31,Física,2026-06-29
+331,Casa Branca,49,Física,2025-07-20
+332,Aguaí,53,Física,2024-03-02
+333,Aguaí,57,Física,2026-03-03
+334,São José do Rio Pardo,50,Física,2026-07-17
+335,Itobi,45,Online,2024-02-10
+336,Vargem Grande do Sul,29,Online,2025-07-22
+337,Aguaí,45,Física,2024-03-30
+338,Casa Branca,71,Física,2026-02-22
+339,Aguaí,19,Física,2025-11-18
+340,São José do Rio Pardo,44,Física,2025-01-24
+341,Tambaú,54,Online,2024-11-19
+342,São José do Rio Pardo,42,Online,2026-04-14
+343,Mococa,51,Física,2026-06-12
+344,São João da Boa Vista,59,Física,2024-02-26
+345,Tambaú,58,Online,2026-06-09
+346,Tambaú,37,Física,2024-05-16
+347,São João da Boa Vista,34,Online,2026-05-16
+348,Mococa,22,Física,2024-03-18
+349,Mococa,31,Física,2024-12-26
+350,Casa Branca,55,Online,2025-01-27
+351,Casa Branca,71,Física,2026-03-06
+352,Casa Branca,66,Online,2025-06-13
+353,São José do Rio Pardo,36,Física,2024-10-16
+354,Mococa,66,Física,2024-07-13
+355,São José do Rio Pardo,74,Online,2025-05-17
+356,Tambaú,35,Física,2024-10-18
+357,Vargem Grande do Sul,75,Online,2025-09-11
+358,São João da Boa Vista,18,Física,2025-03-30
+359,Aguaí,49,Física,2025-01-26
+360,Casa Branca,18,Física,2025-01-05
+361,Tambaú,60,Online,2026-01-04
+362,Itobi,24,Online,2026-07-05
+363,Casa Branca,42,Online,2026-07-07
+364,Aguaí,31,Física,2026-02-09
+365,Casa Branca,36,Física,2024-11-01
+366,São João da Boa Vista,43,Online,2026-06-07
+367,Itobi,48,Física,2024-12-18
+368,Vargem Grande do Sul,29,Física,2024-04-05
+369,Aguaí,20,Física,2024-01-29
+370,Mococa,51,Física,2026-02-15
+371,Mococa,26,Online,2024-12-07
+372,São José do Rio Pardo,47,Online,2024-02-28
+373,São José do Rio Pardo,63,Física,2024-06-20
+374,Vargem Grande do Sul,41,Online,2025-06-25
+375,Casa Branca,28,Física,2026-08-17
+376,Vargem Grande do Sul,47,Online,2025-01-26
+377,Tambaú,40,Física,2026-05-21
+378,São José do Rio Pardo,53,Física,2024-08-17
+379,Vargem Grande do Sul,65,Online,2024-07-02
+380,Itobi,19,Física,2024-03-13
+381,Itobi,45,Online,2024-04-17
+382,Tambaú,32,Online,2024-07-24
+383,Mococa,34,Online,2024-01-24
+384,São João da Boa Vista,56,Online,2026-09-08
+385,Vargem Grande do Sul,65,Física,2026-06-14
+386,Itobi,67,Física,2024-12-15
+387,Vargem Grande do Sul,45,Online,2026-09-09
+388,Tambaú,29,Online,2026-07-11
+389,Mococa,73,Online,2024-06-25
+390,Aguaí,69,Física,2024-04-21
+391,Itobi,59,Online,2025-08-16
+392,Casa Branca,27,Online,2025-02-15
+393,Itobi,62,Online,2026-10-29
+394,Itobi,28,Física,2025-11-25
+395,Itobi,66,Física,2024-11-17
+396,Aguaí,73,Física,2025-06-14
+397,Casa Branca,20,Física,2024-12-05
+398,Vargem Grande do Sul,27,Online,2026-09-05
+399,Aguaí,24,Física,2025-02-22
+400,Casa Branca,28,Física,2024-05-07
+401,Aguaí,75,Física,2025-05-31
+402,Mococa,40,Física,2026-04-22
+403,Casa Branca,65,Física,2025-06-22
+404,Vargem Grande do Sul,20,Online,2024-04-17
+405,Casa Branca,37,Física,2025-02-01
+406,São João da Boa Vista,37,Física,2024-03-09
+407,Aguaí,37,Física,2026-10-08
+408,Itobi,31,Online,2024-02-28
+409,Itobi,49,Física,2025-09-26
+410,Casa Branca,44,Física,2024-07-16
+411,Mococa,38,Física,2024-10-12
+412,São José do Rio Pardo,58,Física,2025-01-07
+413,Itobi,54,Online,2024-11-15
+414,Itobi,43,Online,2024-03-16
+415,São João da Boa Vista,73,Física,2025-03-03
+416,São José do Rio Pardo,50,Online,2026-03-26
+417,Vargem Grande do Sul,40,Online,2025-12-20
+418,Vargem Grande do Sul,42,Online,2026-10-20
+419,São José do Rio Pardo,45,Online,2025-04-23
+420,Mococa,45,Online,2026-07-01
+421,Tambaú,30,Física,2025-01-31
+422,Vargem Grande do Sul,24,Física,2025-01-15
+423,Tambaú,69,Física,2026-03-20
+424,São João da Boa Vista,65,Física,2025-01-15
+425,Aguaí,18,Online,2025-07-03
+426,Mococa,26,Física,2026-02-07
+427,Itobi,31,Física,2025-01-24
+428,Mococa,34,Online,2024-12-18
+429,Vargem Grande do Sul,29,Online,2026-03-30
+430,São João da Boa Vista,50,Física,2025-06-03
+431,Mococa,24,Física,2026-10-07
+432,Tambaú,38,Online,2024-05-12
+433,São João da Boa Vista,71,Online,2026-08-01
+434,Tambaú,22,Física,2026-03-25
+435,São João da Boa Vista,66,Online,2025-05-25
+436,Aguaí,35,Física,2024-05-06
+437,Mococa,48,Física,2026-05-10
+438,Tambaú,56,Online,2026-02-05
+439,Aguaí,59,Física,2025-09-23
+440,Itobi,25,Física,2025-04-23
+441,Mococa,45,Online,2026-05-19
+442,São José do Rio Pardo,44,Online,2026-02-25
+443,Casa Branca,42,Online,2025-09-16
+444,Casa Branca,24,Física,2024-01-25
+445,Mococa,62,Online,2026-04-12
+446,Tambaú,74,Física,2026-04-21
+447,Tambaú,62,Física,2024-03-01
+448,Aguaí,39,Física,2026-01-27
+449,Casa Branca,23,Física,2025-12-12
+450,São José do Rio Pardo,66,Online,2026-10-18
+451,Itobi,34,Online,2026-06-08
+452,São José do Rio Pardo,75,Online,2024-08-27
+453,Casa Branca,25,Online,2025-03-07
+454,Vargem Grande do Sul,26,Física,2025-05-12
+455,São José do Rio Pardo,45,Online,2026-05-06
+456,Vargem Grande do Sul,28,Online,2025-06-22
+457,Tambaú,64,Física,2026-07-23
+458,Vargem Grande do Sul,31,Física,2026-01-08
+459,Aguaí,23,Física,2026-04-04
+460,Itobi,18,Física,2024-12-03
+461,São João da Boa Vista,64,Física,2024-01-06
+462,Mococa,45,Online,2026-02-21
+463,Aguaí,72,Física,2024-06-07
+464,Itobi,59,Online,2026-10-18
+465,Aguaí,35,Online,2025-03-05
+466,Casa Branca,42,Online,2026-08-14
+467,Casa Branca,27,Online,2025-03-20
+468,Casa Branca,31,Física,2025-11-16
+469,São João da Boa Vista,54,Física,2025-04-09
+470,Mococa,69,Física,2024-09-09
+471,Aguaí,58,Física,2024-10-03
+472,Itobi,34,Física,2026-07-11
+473,Mococa,45,Online,2026-09-15
+474,Itobi,27,Online,2025-09-24
+475,Aguaí,53,Física,2025-01-15
+476,São João da Boa Vista,45,Online,2025-10-14
+477,Itobi,32,Física,2025-07-01
+478,Aguaí,72,Física,2025-04-14
+479,Tambaú,46,Física,2026-03-16
+480,Tambaú,73,Online,2026-08-11
+481,Aguaí,32,Online,2025-04-05
+482,Casa Branca,72,Online,2026-04-27
+483,Vargem Grande do Sul,37,Física,2025-01-08
+484,Aguaí,59,Física,2025-03-06
+485,São João da Boa Vista,71,Online,2024-09-04
+486,Mococa,64,Online,2024-01-07
+487,Vargem Grande do Sul,67,Online,2025-07-10
+488,Aguaí,36,Física,2024-05-31
+489,Mococa,61,Online,2026-03-14
+490,Aguaí,29,Física,2025-02-07
+491,São José do Rio Pardo,47,Física,2024-06-11
+492,Vargem Grande do Sul,70,Online,2026-07-28
+493,São João da Boa Vista,49,Online,2024-11-22
+494,São José do Rio Pardo,53,Física,2026-01-24
+495,Casa Branca,56,Física,2026-10-19
+496,Vargem Grande do Sul,32,Física,2026-07-29
+497,São João da Boa Vista,47,Física,2026-10-12
+498,Vargem Grande do Sul,35,Online,2025-07-21
+499,Tambaú,72,Online,2024-12-29
+500,Casa Branca,29,Online,2024-03-05
