@@ -35,6 +35,11 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/varejo_db
       - PYTHONUNBUFFERED=1
+      - METRICS_ENABLED=${SIMULATOR_METRICS_ENABLED:-true}
+      - METRICS_PORT=8000
+      - METRICS_ALLOWED_SOURCES=${SIMULATOR_METRICS_ALLOWED_SOURCES:-127.0.0.1/32}
+    ports:
+      - "${SIMULATOR_METRICS_BIND:-127.0.0.1}:${SIMULATOR_METRICS_PORT:-8000}:8000"
     depends_on:
       - db
   

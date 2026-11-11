@@ -1,0 +1,58 @@
+---
+- name: Instalar ferramenta de regras IPv4 do Ubuntu
+  ansible.builtin.apt:
+    name: iptables
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Configurar regras exclusivas das portas de métricas
+  ansible.builtin.template:
+    src: metrics-firewall.py.j2
+    dest: /usr/local/sbin/vm-metrics-firewall
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Persistir regras de métricas após reboot
+  ansible.builtin.template:
+    src: vm-metrics-firewall.service.j2
+    dest: /etc/systemd/system/vm-metrics-firewall.service
+    owner: root
+    group: root
+    mode: "0644"
+  register: metrics_firewall_unit
+
+- name: Criar diretório de dependência do firewall para os coletores
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ item }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ metrics_firewall_services }}"
+
+- name: Exigir firewall aplicado antes de iniciar os coletores
+  ansible.builtin.copy:
+    dest: "/etc/systemd/system/{{ item }}.service.d/metrics-firewall.conf"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Unit]
+      Requires=vm-metrics-firewall.service
+      After=vm-metrics-firewall.service
+  loop: "{{ metrics_firewall_services }}"
+  register: metrics_firewall_dependencies
+
+- name: Aplicar somente a cadeia de firewall gerenciada pelo projeto
+  ansible.builtin.command: /usr/local/sbin/vm-metrics-firewall
+  register: metrics_firewall_result
+  changed_when: "'changed' in metrics_firewall_result.stdout"
+
+- name: Habilitar persistência do firewall de métricas
+  ansible.builtin.systemd_service:
+    name: vm-metrics-firewall
+    daemon_reload: "{{ metrics_firewall_unit.changed or metrics_firewall_dependencies.changed }}"
+    enabled: true
+    state: started

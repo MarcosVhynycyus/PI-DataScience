@@ -1,0 +1,175 @@
+---
+- name: Identificar container Grafana existente
+  ansible.builtin.command:
+    argv: [docker, compose, --project-directory, /opt/monitoring, ps, -q, grafana]
+  register: monitoring_grafana_container
+  changed_when: false
+
+- name: Exigir Grafana existente sem reinstalação
+  ansible.builtin.assert:
+    that: monitoring_grafana_container.stdout | length > 0
+    fail_msg: Execute setup.yml para preparar Docker e Grafana antes de monitoring.yml.
+
+- name: Inspecionar redes e volume persistente do Grafana
+  ansible.builtin.command:
+    argv: [docker, inspect, "{{ monitoring_grafana_container.stdout | trim }}"]
+  register: monitoring_grafana_inspect
+  changed_when: false
+  no_log: true
+
+- name: Identificar redes Docker permitidas para acesso do Grafana
+  ansible.builtin.command:
+    argv:
+      - docker
+      - network
+      - inspect
+      - "{{ item.value.NetworkID }}"
+  loop: "{{ ((monitoring_grafana_inspect.stdout | from_json)[0].NetworkSettings.Networks) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  register: monitoring_docker_networks
+  changed_when: false
+
+- name: Inicializar origens permitidas do Grafana
+  ansible.builtin.set_fact:
+    monitoring_docker_subnets: []
+
+- name: Obter sub-redes IPv4 das redes do container
+  ansible.builtin.set_fact:
+    monitoring_docker_subnets: >-
+      {{ monitoring_docker_subnets +
+         ((item.stdout | from_json)[0].IPAM.Config | map(attribute='Subnet') |
+          reject('search', ':') | list) }}
+  loop: "{{ monitoring_docker_networks.results }}"
+  loop_control:
+    label: "{{ item.item.key }}"
+
+- name: Restringir Prometheus ao host KVM e às redes do Grafana
+  ansible.builtin.include_role:
+    name: ../roles/metrics_firewall
+  vars:
+    metrics_firewall_services: [prometheus]
+    metrics_firewall_rules:
+      - port: "{{ prometheus_port }}"
+        sources: "{{ (['127.0.0.1/32', monitoring_address] + prometheus_ui_allowed_sources + monitoring_docker_subnets) | unique | list }}"
+
+- name: Instalar Prometheus e promtool do Ubuntu
+  ansible.builtin.apt:
+    name: prometheus
+    state: present
+    install_recommends: false
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Ler argumentos existentes do serviço sem descartar opções
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - |
+        import pathlib, shlex, sys
+        p = pathlib.Path('/etc/default/prometheus')
+        args = []
+        for line in p.read_text().splitlines() if p.exists() else []:
+            if line.startswith('ARGS='):
+                value = shlex.split(line[5:])
+                args = shlex.split(value[0]) if value else []
+        result = []
+        skip = False
+        for arg in args:
+            if skip:
+                skip = False
+                continue
+            if arg == '--web.listen-address':
+                skip = True
+            elif not arg.startswith('--web.listen-address='):
+                result.append(arg)
+        result.append('--web.listen-address=0.0.0.0:' + sys.argv[1])
+        print('ARGS=' + shlex.quote(shlex.join(result)))
+      - "{{ prometheus_port | string }}"
+  register: prometheus_service_args
+  changed_when: false
+
+- name: Configurar porta HTTP preservando outros argumentos
+  ansible.builtin.lineinfile:
+    path: /etc/default/prometheus
+    regexp: '^ARGS='
+    line: "{{ prometheus_service_args.stdout }}"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: Reiniciar Prometheus
+
+- name: Ler configuração existente do Prometheus
+  ansible.builtin.slurp:
+    src: "{{ prometheus_config_file }}"
+  register: prometheus_existing_file
+
+- name: Preparar jobs gerenciados a partir do inventário
+  ansible.builtin.set_fact:
+    prometheus_existing: "{{ prometheus_existing_file.content | b64decode | from_yaml }}"
+    prometheus_managed_jobs: "{{ lookup('ansible.builtin.template', 'jobs.yml.j2') | from_yaml }}"
+
+- name: Validar estrutura antes de mesclar a configuração
+  ansible.builtin.assert:
+    that:
+      - prometheus_existing is mapping
+      - prometheus_existing.get('scrape_configs', []) is sequence
+
+- name: Mesclar configuração sem duplicar jobs gerenciados
+  ansible.builtin.include_tasks: merge.yml
+
+- name: Gravar configuração somente após aprovação do promtool
+  ansible.builtin.copy:
+    content: "{{ prometheus_merged | to_nice_yaml(indent=2, sort_keys=false) }}"
+    dest: "{{ prometheus_config_file }}"
+    owner: root
+    group: prometheus
+    mode: "0640"
+    backup: true
+    validate: /usr/bin/promtool check config %s
+  notify: Reiniciar Prometheus
+
+- name: Validar configuração instalada
+  ansible.builtin.command:
+    argv: [/usr/bin/promtool, check, config, "{{ prometheus_config_file }}"]
+  changed_when: false
+
+- name: Habilitar e iniciar Prometheus
+  ansible.builtin.systemd_service:
+    name: prometheus
+    state: started
+    enabled: true
+
+- name: Aplicar configuração antes dos testes HTTP
+  ansible.builtin.meta: flush_handlers
+
+- name: Verificar Node Exporter a partir da VM de monitoramento
+  ansible.builtin.uri:
+    url: "http://{{ hostvars[item].ansible_host | default(item) }}:{{ node_exporter_port }}/metrics"
+    return_content: true
+  loop: "{{ groups['simulator'] }}"
+  register: prometheus_node_endpoint
+  until: prometheus_node_endpoint.status | default(0) == 200
+  retries: 12
+  delay: 5
+  failed_when: >-
+    prometheus_node_endpoint.status | default(0) != 200 or
+    'node_cpu_seconds_total' not in (prometheus_node_endpoint.content | default(''))
+
+- name: Aguardar todos os targets gerenciados ficarem UP
+  ansible.builtin.uri:
+    url: >-
+      http://127.0.0.1:{{ prometheus_port }}/api/v1/query?query={{ ('up{job="' ~ item ~ '"}') | urlencode }}
+    return_content: true
+  loop: "{{ ['vm-geradora'] + (['aplicacao-geradora'] if simulator_metrics_enabled | bool else []) }}"
+  register: prometheus_target_health
+  until: >-
+    prometheus_target_health.status | default(0) == 200 and
+    (prometheus_target_health.json | default({})).get('data', {}).get('result', []) | length == groups['simulator'] | length and
+    (prometheus_target_health.json | default({})).get('data', {}).get('result', []) |
+    map(attribute='value') | map('last') | unique | list == ['1']
+  retries: 18
+  delay: 5

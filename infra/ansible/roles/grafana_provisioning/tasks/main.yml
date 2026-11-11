@@ -1,0 +1,165 @@
+---
+- name: Identificar caminho do banco persistente do Grafana
+  ansible.builtin.set_fact:
+    grafana_data_path: >-
+      {{ ((monitoring_grafana_inspect.stdout | from_json)[0].Mounts |
+          selectattr('Destination', 'equalto', '/var/lib/grafana') | first).Source }}
+
+- name: Consultar fontes existentes sem autenticação ou alteração de credenciais
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - |
+        import json, pathlib, sqlite3, sys
+        from contextlib import closing
+        path = pathlib.Path(sys.argv[1]) / 'grafana.db'
+        with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as db:
+            other_defaults = db.execute(
+                'SELECT COUNT(*) FROM data_source WHERE org_id=1 AND is_default=1 AND uid<>?',
+                (sys.argv[2],),
+            ).fetchone()[0]
+        print(json.dumps({'make_default': other_defaults == 0}))
+      - "{{ grafana_data_path }}"
+      - "{{ grafana_datasource_uid }}"
+  register: grafana_existing_sources
+  changed_when: false
+
+- name: Criar diretórios adicionais de provisioning
+  ansible.builtin.file:
+    path: "/opt/monitoring/grafana/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - provisioning/datasources
+    - provisioning/dashboards
+    - dashboards
+
+- name: Provisionar fonte Prometheus sem remover fontes existentes
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /opt/monitoring/grafana/provisioning/datasources/vm-prometheus.yml
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    grafana_prometheus_default: "{{ (grafana_existing_sources.stdout | from_json).make_default }}"
+  notify: Recarregar provisioning do Grafana
+
+- name: Provisionar provedor do dashboard da geradora
+  ansible.builtin.template:
+    src: dashboards.yml.j2
+    dest: /opt/monitoring/grafana/provisioning/dashboards/vm-geradora.yml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Recarregar provisioning do Grafana
+
+- name: Provisionar dashboard versionado
+  ansible.builtin.template:
+    src: vm-geradora.json.j2
+    dest: /opt/monitoring/grafana/dashboards/vm-geradora.json
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Adicionar mounts ao Compose mantendo imagem, senha e volume
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../templates/monitoring-compose.yml.j2"
+    dest: /opt/monitoring/compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+
+- name: Aplicar Compose sem baixar novamente a imagem existente
+  ansible.builtin.command:
+    argv: [docker, compose, --ansi, never, --project-directory, /opt/monitoring, up, -d, --pull, missing, grafana]
+  register: grafana_provisioning_compose
+  changed_when: >-
+    (grafana_provisioning_compose.stdout ~ grafana_provisioning_compose.stderr)
+    is search('Creating|Created|Starting|Started|Recreate|Pulling|Pulled')
+
+- name: Aplicar provisioning antes das verificações
+  ansible.builtin.meta: flush_handlers
+
+- name: Aguardar Grafana saudável
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ grafana_port }}/api/health"
+    return_content: true
+  register: grafana_provisioning_health
+  until: >-
+    grafana_provisioning_health.status | default(0) == 200 and
+    (grafana_provisioning_health.json | default({})).get('database') == 'ok'
+  retries: 30
+  delay: 5
+
+- name: Obter namespace de rede do container atual
+  ansible.builtin.command:
+    argv: [docker, compose, --project-directory, /opt/monitoring, ps, -q, grafana]
+  register: grafana_current_container
+  changed_when: false
+
+- name: Inspecionar PID do Grafana após eventuais mudanças do Compose
+  ansible.builtin.command:
+    argv: [docker, inspect, --format, "{% raw %}{{.State.Pid}}{% endraw %}", "{{ grafana_current_container.stdout | trim }}"]
+  register: grafana_current_pid
+  changed_when: false
+
+- name: Validar conexão com Prometheus a partir da rede do Grafana
+  ansible.builtin.command:
+    argv:
+      - nsenter
+      - --target
+      - "{{ grafana_current_pid.stdout | trim }}"
+      - --net
+      - /usr/bin/python3
+      - -c
+      - |
+        import sys, urllib.request
+        with urllib.request.urlopen(sys.argv[1] + '/-/ready', timeout=10) as response:
+            assert response.status == 200
+      - "{{ grafana_prometheus_url }}"
+  changed_when: false
+
+- name: Confirmar fonte e dashboard carregados no banco do Grafana
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - |
+        import pathlib, sqlite3, sys
+        from contextlib import closing
+        path = pathlib.Path(sys.argv[1]) / 'grafana.db'
+        version = sys.argv[4]
+        major_version = int(version.split('.', 1)[0])
+        with closing(sqlite3.connect(path.as_uri() + '?mode=ro', uri=True)) as db:
+            assert db.execute('SELECT 1 FROM data_source WHERE org_id=1 AND uid=? AND url=?',
+                              (sys.argv[2], sys.argv[3])).fetchone(), 'Fonte ausente'
+            tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            dashboard = None
+            if 'resource' in tables:
+                # Grafana 13 utiliza unified storage. O UID está em name;
+                # metadata.uid é um identificador interno diferente.
+                dashboard = db.execute(
+                    'SELECT 1 FROM resource WHERE "group"=? AND resource=? '
+                    'AND namespace IN (?, ?) AND name=?',
+                    ('dashboard.grafana.app', 'dashboards', 'default', 'org-1', 'vm-geradora'),
+                ).fetchone()
+            if not dashboard and major_version < 13 and 'dashboard' in tables:
+                dashboard = db.execute('SELECT 1 FROM dashboard WHERE org_id=1 AND uid=?',
+                                       ('vm-geradora',)).fetchone()
+            # Em 13+, uma linha legada pode estar desatualizada após a migração.
+            assert dashboard, 'Dashboard ausente no armazenamento ativo do Grafana ' + version
+        print('Fonte e dashboard vm-geradora confirmados no Grafana ' + version)
+      - "{{ grafana_data_path }}"
+      - "{{ grafana_datasource_uid }}"
+      - "{{ grafana_prometheus_url }}"
+      - "{{ grafana_provisioning_health.json.version }}"
+  register: grafana_provisioning_loaded
+  until: grafana_provisioning_loaded.rc == 0
+  retries: 12
+  delay: 5
+  changed_when: false

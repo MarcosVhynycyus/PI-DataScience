@@ -1,0 +1,45 @@
+---
+- name: Confirmar plataforma e inventário de monitoramento
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == 'Ubuntu'
+      - groups['monitoring'] | length == 1
+      - groups['simulator'] | length > 0
+    fail_msg: Esta automação utiliza os pacotes Ubuntu e uma VM de monitoramento.
+
+- name: Restringir Node Exporter à VM de monitoramento
+  ansible.builtin.include_role:
+    name: ../roles/metrics_firewall
+  vars:
+    metrics_firewall_services: [prometheus-node-exporter]
+    metrics_firewall_rules:
+      - port: "{{ node_exporter_port }}"
+        sources: ["{{ monitoring_address }}"]
+
+- name: Instalar Node Exporter do Ubuntu
+  ansible.builtin.apt:
+    name: prometheus-node-exporter
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Configurar endereço privado do Node Exporter
+  ansible.builtin.lineinfile:
+    path: /etc/default/prometheus-node-exporter
+    regexp: '^ARGS='
+    line: 'ARGS="--web.listen-address={{ ansible_host | default(inventory_hostname) }}:{{ node_exporter_port }}"'
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+  notify: Reiniciar Node Exporter
+
+- name: Garantir Node Exporter ativo e habilitado
+  ansible.builtin.systemd_service:
+    name: prometheus-node-exporter
+    state: started
+    enabled: true
+
+- name: Aplicar mudanças antes de validar a coleta
+  ansible.builtin.meta: flush_handlers

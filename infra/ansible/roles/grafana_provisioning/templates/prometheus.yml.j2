@@ -1,0 +1,13 @@
+apiVersion: 1
+datasources:
+  - name: {{ grafana_datasource_name | to_json }}
+    uid: {{ grafana_datasource_uid | to_json }}
+    orgId: 1
+    type: prometheus
+    access: proxy
+    url: {{ grafana_prometheus_url | to_json }}
+    isDefault: {{ grafana_prometheus_default | bool | lower }}
+    editable: false
+    jsonData:
+      httpMethod: POST
+      timeInterval: {{ prometheus_scrape_interval | to_json }}

@@ -1,0 +1,10 @@
+services:
+  generator:
+    labels:
+      org.espacomr.metrics-revision: {{ simulator_metrics_revision | to_json }}
+    environment:
+      METRICS_ENABLED: "true"
+      METRICS_PORT: "8000"
+      METRICS_ALLOWED_SOURCES: {{ monitoring_address | to_json }}
+    ports:
+      - "{{ ansible_host | default(inventory_hostname) }}:{{ simulator_metrics_port }}:8000"

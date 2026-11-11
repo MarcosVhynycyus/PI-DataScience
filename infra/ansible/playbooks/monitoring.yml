@@ -1,0 +1,14 @@
+---
+- name: Configurar métricas da VM geradora
+  hosts: simulator
+  become: true
+  roles:
+    - role: ../roles/node_exporter
+    - role: ../roles/simulator_metrics
+
+- name: Configurar coleta e visualização na VM de monitoramento
+  hosts: monitoring
+  become: true
+  roles:
+    - role: ../roles/prometheus
+    - role: ../roles/grafana_provisioning

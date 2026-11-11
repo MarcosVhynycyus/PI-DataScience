@@ -1,0 +1,5 @@
+---
+- name: Recarregar provisioning do Grafana
+  ansible.builtin.command:
+    argv: [docker, compose, --project-directory, /opt/monitoring, restart, grafana]
+  changed_when: true

@@ -12,6 +12,9 @@ from gerador import (
     sujar_crediario, sujar_promocoes
 )
 from parametros import parse_args
+from metrics import GeneratorMetrics
+
+metrics = GeneratorMetrics()
 
 def inicializar_dimensoes(args):
     """Gera as tabelas de dimensão iniciais caso ainda não existam no banco."""
@@ -23,21 +26,29 @@ def inicializar_dimensoes(args):
         clientes = gerar_clientes(args.clientes)
         clientes = sujar_clientes(clientes, args.taxa_erro)
         clientes.to_sql("clientes", engine, if_exists="replace", index=False)
+        metrics.record_written("clientes", len(clientes))
 
     if "vendedores" not in tabelas_existentes:
         print("Inicializando dimensão Vendedores...")
         vendedores = gerar_vendedores(args.vendedores)
         vendedores.to_sql("vendedores", engine, if_exists="replace", index=False)
+        metrics.record_written("vendedores", len(vendedores))
 
     if "estoque" not in tabelas_existentes:
         print("Inicializando dimensão Estoque...")
         estoque = gerar_estoque(args.produtos)
         estoque = sujar_estoque(estoque, args.taxa_erro)
         estoque.to_sql("estoque", engine, if_exists="replace", index=False)
+        metrics.record_written("estoque", len(estoque))
 
 def rodar_simulador():
     args = parse_args()
-    inicializar_dimensoes(args)
+    metrics.start_server()
+    try:
+        inicializar_dimensoes(args)
+    except Exception:
+        metrics.failed("initialization")
+        raise
 
     print("Iniciando fluxo contínuo de geração de vendas e eventos...")
     
@@ -46,8 +57,10 @@ def rodar_simulador():
     estoque_df = pd.read_sql("SELECT * FROM estoque", engine)
     
     ids_cliente_validos = clientes_df["id_cliente"].dropna().tolist()
+    metrics.ready.set(1)
 
     while True:
+        cycle_started = time.monotonic()
         try:
             with engine.connect() as conn:
                 # 1. Busca o maior ID diretamente no banco; se a tabela não existir, assume 0
@@ -81,6 +94,8 @@ def rodar_simulador():
                 id_inicio_promocao=ultimo_id_promocao + 1
             )
 
+            sales_value = metrics.sales_value_before_noise(vendas)
+
             # 3. Injeta ruídos/falhas
             vendas = sujar_vendas(vendas, args.taxa_erro, ids_cliente_validos)
             crediario = sujar_crediario(crediario, args.taxa_erro)
@@ -88,15 +103,20 @@ def rodar_simulador():
 
             # 4. Insere no SQL (append)
             vendas.to_sql("vendas", engine, if_exists="append", index=False)
+            metrics.record_written("vendas", len(vendas))
             if not crediario.empty:
                 crediario.to_sql("crediario", engine, if_exists="append", index=False)
+                metrics.record_written("crediario", len(crediario))
             promocoes.to_sql("promocoes", engine, if_exists="append", index=False)
+            metrics.record_written("promocoes", len(promocoes))
+            metrics.cycle_succeeded(len(vendas), time.monotonic() - cycle_started, sales_value)
 
             print(f"[{time.strftime('%H:%M:%S')}] +{len(vendas)} vendas inseridas no banco SQL.", flush=True)
             
             time.sleep(5)
 
         except Exception as e:
+            metrics.failed("cycle")
             print(f"Erro no ciclo do gerador: {e}")
             time.sleep(5)
 

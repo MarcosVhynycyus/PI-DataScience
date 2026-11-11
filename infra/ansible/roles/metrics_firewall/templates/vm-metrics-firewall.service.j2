@@ -1,0 +1,13 @@
+[Unit]
+Description=Allowlist das portas de metricas do laboratorio
+After=network-online.target ufw.service
+Wants=network-online.target
+Before=prometheus.service prometheus-node-exporter.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/vm-metrics-firewall
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

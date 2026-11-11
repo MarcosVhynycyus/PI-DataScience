@@ -1,0 +1,59 @@
+#!/usr/bin/python3
+"""Gerencia apenas MR-VM-METRICS; preserva regras UFW/Docker e demais portas."""
+import json
+import ipaddress
+import shlex
+import socket
+import subprocess
+
+RULES = json.loads({{ metrics_firewall_rules | to_json | to_json }})
+CHAIN = "MR-VM-METRICS"
+
+
+def iptables(*args, check=True):
+    return subprocess.run(
+        ["/usr/sbin/iptables", "--wait", "10", *args],
+        text=True, capture_output=True, check=check,
+    )
+
+
+desired = []
+for endpoint in RULES:
+    for source in endpoint["sources"]:
+        desired.append(["-s", source, "-p", "tcp", "-m", "tcp",
+                        "--dport", str(endpoint["port"]), "-j", "ACCEPT"])
+    desired.append(["-p", "tcp", "-m", "tcp", "--dport",
+                    str(endpoint["port"]), "-j", "DROP"])
+
+existing = iptables("-S", CHAIN, check=False)
+changed = existing.returncode != 0
+if changed:
+    iptables("-N", CHAIN)
+current = [shlex.split(line)[2:] for line in existing.stdout.splitlines()
+           if line.startswith("-A ")]
+# iptables normaliza endereços IPv4 isolados acrescentando /32.
+for rule in desired:
+    if "-s" in rule:
+        idx = rule.index("-s") + 1
+        try:
+            rule[idx] = str(ipaddress.ip_network(rule[idx], strict=False))
+        except ValueError:
+            rule[idx] = socket.gethostbyname(rule[idx]) + "/32"
+if current != desired:
+    iptables("-F", CHAIN)
+    for rule in desired:
+        iptables("-A", CHAIN, *rule)
+    changed = True
+
+jump = ["-j", CHAIN]
+input_rules = [shlex.split(line)[2:] for line in iptables("-S", "INPUT").stdout.splitlines()
+               if line.startswith("-A ")]
+first_is_managed = bool(input_rules and input_rules[0][-2:] == ["-j", CHAIN])
+if not first_is_managed or iptables("-C", "INPUT", *jump, check=False).returncode:
+    if iptables("-C", "INPUT", *jump, check=False).returncode == 0:
+        iptables("-D", "INPUT", *jump)
+    # Antes de regras permissivas existentes: somente as portas acima são filtradas.
+    iptables("-I", "INPUT", "1", *jump)
+    changed = True
+if changed:
+    print("changed")

@@ -1,0 +1,66 @@
+---
+- name: Atualizar somente o gerador quando métricas da aplicação forem habilitadas
+  when: simulator_metrics_enabled | bool
+  block:
+    - name: Exigir diretório explícito do projeto Compose existente
+      ansible.builtin.assert:
+        that:
+          - simulator_compose_dir | length > 0
+          - simulator_compose_dir is match('^/')
+        fail_msg: Informe -e simulator_compose_dir=/caminho/do/simulator existente na VM.
+
+    - name: Consultar projeto Compose do gerador existente
+      ansible.builtin.command:
+        argv: [docker, inspect, simulator_generator]
+      register: simulator_existing_container
+      changed_when: false
+      no_log: true
+
+    - name: Confirmar que o diretório corresponde ao projeto em execução
+      ansible.builtin.assert:
+        that:
+          - (simulator_existing_container.stdout | from_json)[0].Config.Labels['com.docker.compose.project.working_dir'] == simulator_compose_dir
+        fail_msg: O diretório informado deve corresponder ao Compose já em execução.
+
+    - name: Identificar versão da instrumentação e nome do projeto existente
+      ansible.builtin.set_fact:
+        simulator_metrics_revision: >-
+          {{ (lookup('ansible.builtin.file', playbook_dir ~ '/../../../simulator/stream_generator.py') ~
+              lookup('ansible.builtin.file', playbook_dir ~ '/../../../simulator/metrics.py') ~
+              lookup('ansible.builtin.file', playbook_dir ~ '/../../../simulator/requirements.txt')) | hash('sha256') }}
+        simulator_compose_project: "{{ (simulator_existing_container.stdout | from_json)[0].Config.Labels['com.docker.compose.project'] }}"
+
+    - name: Atualizar apenas instrumentação e dependências do gerador
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../../../simulator/{{ item }}"
+        dest: "{{ simulator_compose_dir }}/{{ item }}"
+        owner: "{{ ansible_user }}"
+        mode: "0644"
+        backup: true
+      loop: [stream_generator.py, metrics.py, requirements.txt]
+      register: simulator_metrics_code
+
+    - name: Configurar override de métricas preservando serviços e volumes existentes
+      ansible.builtin.template:
+        src: compose.metrics.yml.j2
+        dest: "{{ simulator_compose_dir }}/compose.metrics.yml"
+        owner: "{{ ansible_user }}"
+        mode: "0644"
+
+    - name: Validar Compose combinado antes de atualizar o gerador
+      ansible.builtin.command:
+        argv: [docker, compose, --project-name, "{{ simulator_compose_project }}", --project-directory, "{{ simulator_compose_dir }}", -f, "{{ simulator_compose_dir }}/docker-compose.yml", -f, "{{ simulator_compose_dir }}/compose.metrics.yml", config, --quiet]
+      changed_when: false
+
+    - name: Aplicar somente o gerador sem reiniciar banco ou API
+      ansible.builtin.command:
+        argv: >-
+          {{ ['docker', 'compose', '--ansi', 'never', '--project-name', simulator_compose_project, '--project-directory', simulator_compose_dir,
+              '-f', simulator_compose_dir ~ '/docker-compose.yml', '-f', simulator_compose_dir ~ '/compose.metrics.yml', 'up', '-d', '--no-deps'] +
+             (['--build'] if simulator_metrics_code.changed or
+                (simulator_existing_container.stdout | from_json)[0].Config.Labels.get('org.espacomr.metrics-revision', '') != simulator_metrics_revision
+              else []) + ['generator'] }}
+      register: simulator_metrics_compose
+      changed_when: >-
+        (simulator_metrics_compose.stdout ~ simulator_metrics_compose.stderr)
+        is search('Creating|Created|Starting|Started|Recreate')

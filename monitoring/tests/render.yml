@@ -1,0 +1,102 @@
+---
+# Executa somente no controlador e grava exclusivamente em /tmp.
+- name: Validar templates com o inventário real sem acessar as VMs
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../../infra/ansible/group_vars/all/monitoring.yml
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    ansible_remote_tmp: /tmp/pi-monitoring-ansible-remote
+    template_root: "{{ playbook_dir }}/../../infra/ansible"
+    grafana_prometheus_default: false
+    metrics_firewall_rules:
+      - port: "{{ node_exporter_port }}"
+        sources: ["{{ monitoring_address }}"]
+  tasks:
+    - name: Criar diretório temporário de validação
+      ansible.builtin.file:
+        path: /tmp/pi-monitoring-validation
+        state: directory
+        mode: "0700"
+
+    - name: Renderizar jobs do Prometheus com o Ansible
+      ansible.builtin.set_fact:
+        rendered_jobs: "{{ lookup('ansible.builtin.template', template_root ~ '/roles/prometheus/templates/jobs.yml.j2') | from_yaml }}"
+      vars:
+        simulator_metrics_enabled: true
+
+    - name: Verificar relação entre inventário e targets
+      ansible.builtin.assert:
+        that:
+          - rendered_jobs | map(attribute='job_name') | list == ['vm-geradora', 'aplicacao-geradora']
+          - rendered_jobs[0].static_configs | length == groups['simulator'] | length
+          - rendered_jobs[0].static_configs[0].targets[0] == (hostvars[groups['simulator'][0]].ansible_host ~ ':' ~ node_exporter_port)
+          - rendered_jobs[1].static_configs[0].targets[0] == (hostvars[groups['simulator'][0]].ansible_host ~ ':' ~ simulator_metrics_port)
+
+    - name: Preparar configuração preexistente
+      ansible.builtin.set_fact:
+        original_config:
+          global: {evaluation_interval: 30s, external_labels: {environment: lab}}
+          scrape_configs: [{job_name: existente, static_configs: [{targets: ['localhost:1234']}]}]
+          rule_files: []
+
+    - name: Usar a própria expressão da role para validar preservação
+      ansible.builtin.include_tasks: ../../infra/ansible/roles/prometheus/tasks/merge.yml
+      vars:
+        prometheus_existing: "{{ original_config }}"
+        prometheus_managed_jobs: "{{ rendered_jobs }}"
+
+    - name: Guardar primeira mesclagem
+      ansible.builtin.set_fact:
+        first_merge: "{{ prometheus_merged }}"
+
+    - name: Repetir a mesclagem
+      ansible.builtin.include_tasks: ../../infra/ansible/roles/prometheus/tasks/merge.yml
+      vars:
+        prometheus_existing: "{{ first_merge }}"
+        prometheus_managed_jobs: "{{ rendered_jobs }}"
+
+    - name: Confirmar preservação de jobs e idempotência da mesclagem
+      ansible.builtin.assert:
+        that:
+          - prometheus_merged == first_merge
+          - prometheus_merged.global.external_labels.environment == 'lab'
+          - prometheus_merged.global.evaluation_interval == '30s'
+          - prometheus_merged.scrape_configs | length == 3
+          - prometheus_merged.scrape_configs[0] == original_config.scrape_configs[0]
+
+    - name: Gravar configuração de validação para promtool
+      ansible.builtin.copy:
+        dest: /tmp/pi-monitoring-validation/prometheus.yml
+        mode: "0600"
+        content: "{{ prometheus_merged | to_nice_yaml(indent=2, sort_keys=false) }}"
+
+    - name: Renderizar configurações de provisioning e Compose
+      ansible.builtin.template:
+        src: "{{ template_root }}/{{ item.src }}"
+        dest: "/tmp/pi-monitoring-validation/{{ item.dest }}"
+        mode: "0600"
+      loop:
+        - {src: roles/grafana_provisioning/templates/prometheus.yml.j2, dest: datasource.yml}
+        - {src: roles/grafana_provisioning/templates/dashboards.yml.j2, dest: dashboards.yml}
+        - {src: roles/grafana_provisioning/templates/vm-geradora.json.j2, dest: dashboard.json}
+        - {src: templates/monitoring-compose.yml.j2, dest: compose.yml}
+        - {src: roles/metrics_firewall/templates/metrics-firewall.py.j2, dest: firewall.py}
+        - {src: roles/metrics_firewall/templates/vm-metrics-firewall.service.j2, dest: firewall.service}
+        - {src: roles/simulator_metrics/templates/compose.metrics.yml.j2, dest: compose.metrics.yml}
+      vars:
+        ansible_host: "{{ hostvars[groups['simulator'][0]].ansible_host }}"
+        simulator_metrics_revision: validation-only
+
+    - name: Verificar condições de saúde sem depender de endpoints ativos
+      ansible.builtin.assert:
+        that:
+          - (prometheus_target_health.json | default({})).get('data', {}).get('result', []) | length == groups['simulator'] | length
+          - (prometheus_target_health.json | default({})).get('data', {}).get('result', []) | map(attribute='value') | map('last') | unique | list == ['1']
+      vars:
+        prometheus_target_health:
+          json:
+            data:
+              result: [{value: [0, '1']}]

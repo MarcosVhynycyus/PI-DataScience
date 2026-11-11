@@ -1,0 +1,21 @@
+---
+# Endereços vêm do inventário gerado pelo OpenTofu, nunca de IPs fixos.
+monitoring_host: "{{ groups['monitoring'] | first }}"
+monitoring_address: "{{ hostvars[monitoring_host].ansible_host | default(monitoring_host) }}"
+node_exporter_port: 9100
+prometheus_port: 9090
+prometheus_scrape_interval: 15s
+prometheus_config_file: /etc/prometheus/prometheus.yml
+grafana_image: grafana/grafana:latest
+grafana_port: 3000
+grafana_datasource_uid: vm-prometheus
+grafana_datasource_name: Prometheus VM Geradora
+grafana_prometheus_url: "http://{{ monitoring_address }}:{{ prometheus_port }}"
+# Acesso à UI do Prometheus pelo host KVM. Outros CIDRs podem ser adicionados.
+prometheus_ui_allowed_sources:
+  - "{{ ansible_default_ipv4.gateway }}/32"
+# O código é instrumentado, mas o container existente só é atualizado por opção.
+simulator_metrics_enabled: false
+simulator_metrics_port: 8000
+# Diretório do projeto Compose JÁ EXISTENTE na geradora; definir ao habilitar.
+simulator_compose_dir: ""

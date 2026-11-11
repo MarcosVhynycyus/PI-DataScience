@@ -1,0 +1,9 @@
+---
+- name: Mesclar jobs mantendo regras, alertas e jobs preexistentes
+  ansible.builtin.set_fact:
+    prometheus_merged: >-
+      {{ prometheus_existing | combine({
+        'global': prometheus_existing.get('global', {}) | combine({'scrape_interval': prometheus_scrape_interval}),
+        'scrape_configs': (prometheus_existing.get('scrape_configs', []) |
+          rejectattr('job_name', 'in', ['vm-geradora', 'aplicacao-geradora']) | list) + prometheus_managed_jobs
+      }) }}

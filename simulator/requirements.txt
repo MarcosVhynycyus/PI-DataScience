@@ -4,3 +4,4 @@ sqlalchemy
 psycopg2-binary
 flask
 gunicorn
+prometheus-client>=0.20,<1

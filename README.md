@@ -9,13 +9,13 @@ O repositório reúne infraestrutura de laboratório, geração de dados sintét
 | Componente | Implementação presente no repositório |
 | --- | --- |
 | Infraestrutura | OpenTofu com QEMU/KVM, libvirt e cloud-init para duas VMs Ubuntu Server 24.04; geração do inventário Ansible. |
-| Automação | Playbook Ansible para instalar Docker, configurar o Grafana e preparar dependências e diretório do simulador. |
+| Automação | Ansible para Docker, Grafana, Node Exporter, Prometheus e provisioning de dashboards; implantação das métricas da aplicação opcional. |
 | Simulador | Geração contínua de dados sintéticos com inconsistências intencionais para exercícios de qualidade de dados. |
 | Serviços de dados | PostgreSQL 15, API Flask com Gunicorn e Adminer, definidos no Docker Compose do simulador. |
 | Data Lake local | Coleta da API para CSV e limpeza com Python, pandas e NumPy. |
 | ETL em R | Script e documento R Markdown para diagnóstico, limpeza e transformação de CSVs. |
 | Data Warehouse | Arquivo SQLite e script para exportação das tabelas em CSV. |
-| Monitoramento | Provisionamento do Grafana via Ansible; fontes de dados, dashboards, Prometheus e alertas ainda precisam ser configurados. |
+| Monitoramento | Configuração Ansible de Prometheus + Node Exporter e dashboard automático no Grafana, com instrumentação opcional do gerador. Alertas ainda não configurados. |
 
 HDFS, processamento distribuído com Spark, integração automatizada entre todas as etapas e modelos de recomendação fazem parte da evolução proposta. Os documentos de arquitetura e pipeline também descrevem esse escopo planejado.
 
@@ -103,7 +103,7 @@ ansible all -i infra/ansible/inventory.ini -m ping
 ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/setup.yml
 ```
 
-O playbook configura o Grafana na VM de monitoramento. Na VM do simulador, instala dependências e cria `/opt/simulator`; a cópia do código e a inicialização dos serviços do simulador são etapas manuais.
+O playbook configura Grafana e Prometheus na VM de monitoramento e Node Exporter na geradora. Na VM do simulador, instala dependências e cria `/opt/simulator`; a cópia inicial do código e a inicialização dos serviços do simulador são etapas manuais. A atualização do gerador existente com métricas pode ser habilitada separadamente, conforme [Monitoramento](monitoring/README.md).
 
 Os arquivos de estado do OpenTofu, `terraform.tfvars`, `.terraform/` e o inventário gerado são específicos de cada ambiente e não devem ser versionados. Consulte os detalhes em [Infraestrutura](infra/README.md).
 
@@ -197,7 +197,15 @@ ansible monitoring -i infra/ansible/inventory.ini --become \
   -a 'cat /opt/monitoring/grafana_admin_password'
 ```
 
-O Grafana utiliza um volume Docker persistente. O playbook verifica sua disponibilidade em `/api/health`; a coleta de métricas e os dashboards dependem de configuração adicional. Consulte [Monitoramento e observabilidade](monitoring/README.md) para opções de imagem, porta e detalhes de acesso.
+O Grafana utiliza um volume Docker persistente. O Ansible provisiona a fonte Prometheus e o dashboard **Monitoramento — VM Geradora**, na pasta **Infraestrutura**, com atualização a cada 15 segundos. O dashboard também está em `http://<IP_DA_VM_MONITORING>:3000/d/vm-geradora`; Prometheus fica em `http://<IP_DA_VM_MONITORING>:9090`.
+
+Para adicionar monitoramento às VMs existentes, execute, após autorizar a implantação:
+
+```bash
+ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/monitoring.yml
+```
+
+Essa implementação foi validada localmente e por inspeções SSH somente de leitura; sua implantação nas VMs permanece pendente. Consulte [Monitoramento e observabilidade](monitoring/README.md) para arquitetura, restrições de acesso, métricas opcionais do gerador, arquivos criados e comandos de validação.
 
 ## Documentação complementar
 
