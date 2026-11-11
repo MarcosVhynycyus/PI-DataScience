@@ -2,14 +2,17 @@ import os
 import requests as rq
 import pandas as pd
 
-vendas_url = "http://192.168.122.92:5000/api/tabelas/vendas"
-vendedores_url = "http://192.168.122.92:5000/api/tabelas/vendedores"
-clientes_url = "http://192.168.122.92:5000/api/tabelas/clientes"
-crediario_url = "http://192.168.122.92:5000/api/tabelas/crediario"
-promocoes_url = "http://192.168.122.92:5000/api/tabelas/promocoes"
-estoque_url = "http://192.168.122.92:5000/api/tabelas/estoque"
+vendas_url = "http://192.168.122.77:5000/api/tabelas/vendas"
+vendedores_url = "http://192.168.122.77:5000/api/tabelas/vendedores"
+clientes_url = "http://192.168.122.77:5000/api/tabelas/clientes"
+crediario_url = "http://192.168.122.77:5000/api/tabelas/crediario"
+promocoes_url = "http://192.168.122.77:5000/api/tabelas/promocoes"
+estoque_url = "http://192.168.122.77:5000/api/tabelas/estoque"
 
-output_dir = "./big-data/datalake/raw_data"
+output_dir = os.getenv(
+    "DATALAKE_OUTPUT_DIR",
+    "./big-data/datalake/raw_data"
+)
 
 vendas_file_path = os.path.join(output_dir, "vendas.csv")
 vendedores_file_path = os.path.join(output_dir, "vendedores.csv")

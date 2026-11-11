@@ -29,9 +29,14 @@
         repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable"
         filename: docker
 
-    - name: Instalar Docker Engine
+    - name: Instalar Docker Engine e Compose
       ansible.builtin.apt:
-        name: [docker-ce, docker-ce-cli, containerd.io]
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
         update_cache: true
         state: present
 

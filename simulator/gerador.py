@@ -91,7 +91,7 @@ def gerar_vendas(n: int, clientes: pd.DataFrame, vendedores: pd.DataFrame,
 
     for i in range(n):
         id_venda = id_inicio + i  
-        produto_row = produtos_idx.loc[random.choice(produtos_idx.index)]
+        produto_row = produtos_idx.iloc[random.randrange(len(produtos_idx))]
         
         # Define a quantidade vendida antes dos cálculos
         quantidade = random.randint(1, 5)
