@@ -50,13 +50,104 @@
 - name: Configurar VM de Monitoramento
   hosts: monitoring
   become: true
+  vars:
+    grafana_image: grafana/grafana:latest
+    grafana_port: 3000
   tasks:
+    - name: Instalar plugin Docker Compose
+      ansible.builtin.apt:
+        name: docker-compose-plugin
+        state: present
+
     - name: Criar diretório de configuração do monitoramento
       ansible.builtin.file:
         path: /opt/monitoring
         state: directory
         owner: marcos
         mode: "0755"
+
+    - name: Gerar senha inicial do administrador do Grafana
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3
+          - -c
+          - |
+            import os
+            import secrets
+            fd = os.open('/opt/monitoring/grafana_admin_password',
+                         os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o400)
+            with os.fdopen(fd, 'w') as password_file:
+                password_file.write(secrets.token_urlsafe(32))
+        creates: /opt/monitoring/grafana_admin_password
+      no_log: true
+
+    - name: Permitir leitura da senha pelo usuário do Grafana no container
+      ansible.builtin.file:
+        path: /opt/monitoring/grafana_admin_password
+        owner: "472"
+        group: "0"
+        mode: "0400"
+
+    - name: Configurar Docker Compose do Grafana
+      ansible.builtin.copy:
+        dest: /opt/monitoring/compose.yml
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          services:
+            grafana:
+              image: {{ grafana_image | to_json }}
+              restart: unless-stopped
+              ports:
+                - "{{ grafana_port }}:3000"
+              environment:
+                GF_SECURITY_ADMIN_USER: admin
+                GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_admin_password
+                GF_USERS_ALLOW_SIGN_UP: "false"
+              secrets:
+                - grafana_admin_password
+              volumes:
+                - grafana_data:/var/lib/grafana
+              logging:
+                driver: json-file
+                options:
+                  max-size: "10m"
+                  max-file: "3"
+          secrets:
+            grafana_admin_password:
+              file: ./grafana_admin_password
+          volumes:
+            grafana_data:
+
+    - name: Iniciar Grafana com Docker Compose
+      ansible.builtin.command:
+        argv:
+          - docker
+          - compose
+          - --ansi
+          - never
+          - --project-directory
+          - /opt/monitoring
+          - up
+          - -d
+          - --pull
+          - missing
+      register: grafana_compose
+      changed_when: >-
+        (grafana_compose.stdout ~ grafana_compose.stderr)
+        is search('Creating|Created|Starting|Started|Recreate|Pulling|Pulled')
+
+    - name: Aguardar Grafana ficar disponível
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ grafana_port }}/api/health"
+        return_content: true
+      register: grafana_health
+      until: >-
+        grafana_health.status | default(0) == 200 and
+        (grafana_health.json | default({})).get('database') == 'ok'
+      retries: 30
+      delay: 5
 
 - name: Configurar VM do Simulador
   hosts: simulator
