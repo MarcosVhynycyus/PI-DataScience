@@ -1,209 +1,93 @@
+# Infraestrutura do Espaço MR
 
+## Visão geral
 
-# Ambiente: Fedora + KVM/QEMU + OpenTofu (`dmacvicar/libvirt`) + Ansible
+A infraestrutura utiliza OpenTofu, QEMU/KVM, libvirt,
+cloud-init e Ansible para provisionar e administrar
+duas máquinas virtuais Ubuntu Server 24.04.
 
+- devops-1: monitoramento e Grafana (planejado).
+- devops-2: execução do simulador de dados (planejado).
 
-## 1. Preparação do Host (Fedora)
+Cada VM possui 1 vCPU, 1 GB de RAM e disco de 10 GB.
 
-### 1.1 Verificar KVM/libvirt e permissões
+## Pré-requisitos
 
-```bash
-sudo systemctl enable --now libvirtd
-sudo systemctl status libvirtd
+No computador hospedeiro:
 
-# checar se a CPU suporta virtualização
-lscpu | grep -i virtualization
+- Linux com virtualização KVM disponível.
+- QEMU/libvirt com rede e pool chamados "default".
+- OpenTofu e Ansible instalados.
+- Cliente SSH e chave SSH Ed25519.
 
-# adicionar seu usuário aos grupos necessários
-sudo usermod -aG libvirt,kvm $USER
-newgrp libvirt   # ou faça logout/login para aplicar
+O ambiente foi testado no Linux Mint com KVM/libvirt.
 
-# testar acesso sem sudo
-virsh list --all
-```
+## Preparação da chave SSH
 
-Se `virsh list --all` retornar sem erro de permissão, o acesso está correto.
+Caso ainda não exista uma chave para este laboratório:
 
-### 1.2 Gerar a chave SSH exigida pelo cloud-init
+ssh-keygen -t ed25519 -f ~/.ssh/devops_lab
 
-```bash
-ssh-keygen -t ed25519 -f ~/.ssh/devops_lab -N "" -C "devops-lab"
-chmod 600 ~/.ssh/devops_lab
-```
+O arquivo variables.tf permite informar outro caminho
+pela variável ssh_key_path.
 
-O arquivo `cloud_init.cfg` já referencia `~/.ssh/devops_lab.pub` — confirme que o caminho bate exatamente com o gerado.
+## Provisionamento
 
-### 1.3 Verificar a imagem base
+A partir da raiz do repositório:
 
-```bash
-ls infra/iaac/*.img 2>/dev/null || \
-  wget -P infra/iaac https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
-```
-
-Confirme no `main.tf` se o `pool` do libvirt aponta para um diretório com permissão de escrita (ex: `/var/lib/libvirt/images` ou um pool próprio do seu usuário).
-
----
-
-## 2. Provisionamento com OpenTofu
-
-```bash
-cd infra/iaac
-
+cd infra/iac
 tofu init
 tofu validate
-tofu plan -out=plan.tfplan
-tofu apply plan.tfplan
-```
+tofu plan
+tofu apply
 
-### 2.1 Verificar as VMs criadas
+A imagem Ubuntu é obtida automaticamente pelo OpenTofu.
 
-```bash
-virsh list --all
-# devops-1, devops-2, devops-3, devops-4 devem aparecer "running"
-```
+Os endereços MAC podem ser definidos localmente por
+terraform.tfvars. Caso não sejam informados, o libvirt
+poderá gerá-los.
 
-### 2.2 Capturar os IPs
+Para consultar os endereços IP:
 
-Se o `main.tf` já expõe `outputs`:
+tofu output ips
 
-```bash
-tofu output
-tofu output -json > ../ansible/ips.json
-```
+## Configuração inicial
 
-Se o output não vier populado (comum com libvirt na primeira execução, pois o DHCP demora alguns segundos), use:
+O cloud-init configura o usuário marcos e sua chave SSH.
 
-```bash
-for vm in devops-1 devops-2 devops-3 devops-4; do
-  echo -n "$vm: "
-  virsh domifaddr "$vm" --source agent 2>/dev/null | awk '/ipv4/{print $4}' || \
-  virsh net-dhcp-leases default | grep "$vm"
-done
-```
+O OpenTofu gera automaticamente:
 
-Guarde os 4 IPs — serão usados no inventário do Ansible.
+infra/ansible/inventory.ini
 
----
+Esse arquivo contém os IPs utilizados pelo Ansible.
 
-## 3. Configuração e Automação com Ansible
+## Testar o Ansible
 
-### 3.1 `infra/ansible/inventory.ini`
+A partir da raiz do repositório:
 
-```ini
-[monitoring]
-devops-1 ansible_host=<IP_DEVOPS-1>
+ansible all -i infra/ansible/inventory.ini -m ping
 
-[simulator]
-devops-2 ansible_host=<IP_DEVOPS-2>
+Ambas as máquinas devem retornar "pong".
 
-[all:vars]
-ansible_user=marcos
-ansible_ssh_private_key_file=~/.ssh/devops_lab
-ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-ansible_python_interpreter=/usr/bin/python3
-```
+O playbook infra/ansible/playbooks/setup.yml contém
+a preparação do ambiente, mas sua execução ainda
+precisa ser validada nesta configuração.
 
-Teste de conectividade:
+## Arquivos locais
 
-```bash
-cd infra/ansible
-ansible -i inventory.ini all -m ping
-```
+Os arquivos terraform.tfstate, terraform.tfvars,
+.terraform/ e o inventário gerado não devem ser
+versionados.
 
-### 3.2 `infra/ansible/playbooks/setup.yml`
+Cada integrante utiliza seu próprio estado local.
 
+## Observações
 
-```
----
----
-- name: Preparar todas as VMs (Docker)
-  hosts: all
-  become: true
-  tasks:
-    - name: Atualizar cache apt
-      ansible.builtin.apt:
-        update_cache: true
+A infraestrutura foi validada no laboratório com
+duas VMs, OpenTofu, cloud-init, SSH e Ansible.
 
-    - name: Instalar dependências
-      ansible.builtin.apt:
-        name: [ca-certificates, curl, gnupg]
-        state: present
+A reprodução integral em outros computadores
+ainda não foi testada.
 
-    - name: Criar diretório de chaves apt
-      ansible.builtin.file:
-        path: /etc/apt/keyrings
-        state: directory
-        mode: "0755"
-
-    - name: Adicionar chave GPG do Docker
-      ansible.builtin.get_url:
-        url: https://download.docker.com/linux/ubuntu/gpg
-        dest: /etc/apt/keyrings/docker.asc
-        mode: "0644"
-
-    - name: Adicionar repositório Docker
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable"
-        filename: docker
-
-    - name: Instalar Docker Engine
-      ansible.builtin.apt:
-        name: [docker-ce, docker-ce-cli, containerd.io]
-        update_cache: true
-        state: present
-
-    - name: Adicionar marcos ao grupo docker
-      ansible.builtin.user:
-        name: marcos
-        groups: docker
-        append: true
-
-    - name: Garantir serviço Docker ativo
-      ansible.builtin.systemd:
-        name: docker
-        state: started
-        enabled: true
-
-- name: Configurar VM de Monitoramento
-  hosts: monitoring
-  become: true
-  tasks:
-    - name: Criar diretório de configuração do monitoramento
-      ansible.builtin.file:
-        path: /opt/monitoring
-        state: directory
-        owner: marcos
-        mode: "0755"
-
-- name: Configurar VM do Simulador
-  hosts: simulator
-  become: true
-  tasks:
-    - name: Instalar Python3 e dependências necessárias
-      apt:
-        name:
-          - python3 
-          - python3-pip 
-          - python3-pandas 
-        state: present 
-        update_cache: yes
-
-    - name: Instalar a biblioteca Faker via pip
-      pip:
-        name: faker
-        state: present
-        extra_args: "--break-system-packages"
-
-    - name: Criar diretório do simulador de dados
-      ansible.builtin.file:
-        path: /opt/simulator
-        state: directory
-        owner: marcos
-        mode: "0755"
-```
-
-Execução:
-
-```bash
-ansible-playbook -i inventory.ini playbooks/setup.yml
-```
+A instalação de Docker, Grafana e do simulador
+será realizada nas próximas etapas.

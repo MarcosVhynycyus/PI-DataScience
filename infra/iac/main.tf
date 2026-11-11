@@ -12,7 +12,7 @@ provider "libvirt" {
 }
 
 locals {
-  vm_count = 2 
+  vm_count = 2
 }
 
 resource "libvirt_volume" "ubuntu_base" {
@@ -40,7 +40,7 @@ resource "libvirt_cloudinit_disk" "init" {
 
   user_data = templatefile("${path.module}/cloud_init.cfg", {
     hostname = "devops-${count.index + 1}"
-    ssh_key  = trimspace(file(pathexpand("~/.ssh/devops_lab.pub")))
+    ssh_key  = trimspace(file("${pathexpand(var.ssh_key_path)}.pub"))
   })
 }
 
@@ -55,6 +55,7 @@ resource "libvirt_domain" "vm" {
 
   network_interface {
     network_name   = "default"
+    mac            = var.vm_macs == null ? null : var.vm_macs[count.index]
     wait_for_lease = true
   }
 
@@ -71,9 +72,11 @@ resource "libvirt_domain" "vm" {
 
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
-    ips = { for vm in libvirt_domain.vm : vm.name => vm.network_interface[0].addresses[0] }
+    ips          = { for vm in libvirt_domain.vm : vm.name => vm.network_interface[0].addresses[0] }
+    ssh_key_path = var.ssh_key_path
   })
-  filename = "${path.module}/../ansible/inventory.ini"
+  filename        = "${path.module}/../ansible/inventory.ini"
+  file_permission = "0644"
 }
 
 output "ips" {

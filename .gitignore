@@ -1,8 +1,18 @@
 infra/iac/*.img
 .venv
 .idea
-infra/iac/*.terraform.lock.hcl
 infra/iac/.terraform
 infra/iac/*.tfstate.backup
 infra/iac/*.tfplan
 infra/iac/*.tfstate
+
+# Arquivos locais de infraestrutura
+infra/iac/.terraform/
+infra/iac/*.tfstate.*
+infra/iac/*.tfstate
+infra/iac/*.tfplan
+infra/iac/*.tfvars
+infra/iac/*.tfvars.json
+infra/iac/*.qcow2
+infra/iac/*.iso
+infra/ansible/inventory.ini
