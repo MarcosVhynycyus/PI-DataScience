@@ -1,327 +1,841 @@
-```{r}
-if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, lubridate, scales, knitr, janitor, httr2, yyjsonr, jsonlite, dplyr)
+---
+title: "Extração, análise exploratória e limpeza dos dados"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    number_sections: true
+params:
+  atualizar_api: true
+---
 
-# Criar diretório de saída para os dados tratados se não existir
-if (!dir.exists("./clean_data")) {
-  dir.create("./clean_data", recursive = TRUE)
+Este relatório segue **API → raw_data/ → diagnóstico → gráficos → interpretação
+→ limpeza → clean_data/ → validação**. Completude, validade, consistência, unicidade,
+estatística descritiva e gráficos exploratórios.
+
+Os arquivos ficam ao lado deste documento, na pasta `pipeline/`. Por padrão,
+cada execução consulta os seis endpoints. Para repetir apenas a análise de uma
+extração já realizada, use o parâmetro `atualizar_api = FALSE` na renderização.
+Esse modo exige os seis CSVs em `raw_data/`; falhas da API nunca acionam uma
+troca silenciosa por dados antigos. Os CSVs tratados mantêm os nomes
+`vendas_clean.csv`, `vendedores_clean.csv` e equivalentes para as demais tabelas.
+
+# Configuração das bibliotecas
+
+```{r configuracao, message=FALSE}
+# Instale os pacotes ausentes uma única vez no console; o relatório não instala
+# dependências nem modifica outros scripts durante a execução.
+pacotes <- c("tidyverse", "lubridate", "janitor", "httr2", "jsonlite", "knitr")
+ausentes <- pacotes[!vapply(pacotes, requireNamespace, logical(1), quietly = TRUE)]
+if (length(ausentes)) {
+  stop("Instale os pacotes antes de executar: ", paste(ausentes, collapse = ", "))
 }
-
-if (!dir.exists("./data")) {
-  dir.create("./data", recursive = TRUE)
-}
-```
-
-```{r}
+library(tidyverse)
+library(lubridate)
+library(janitor)
 library(httr2)
 library(jsonlite)
 
-url_vendas <- "http://192.168.122.92:5000/api/tabelas/vendas"
-url_vendedores <- "http://192.168.122.92:5000/api/tabelas/vendedores"
-url_clientes <- "http://192.168.122.92:5000/api/tabelas/clientes"
-url_promocoes <- "http://192.168.122.92:5000/api/tabelas/promocoes"
-url_estoque <- "http://192.168.122.92:5000/api/tabelas/estoque"
-url_crediario <- "http://192.168.122.92:5000/api/tabelas/crediario"
-```
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE,
+                      error = FALSE, cache = FALSE, results = "asis",
+                      fig.width = 10, fig.height = 6)
+theme_set(theme_minimal(base_size = 11))
+if (!exists("params")) params <- list(atualizar_api = TRUE)
 
-```{r}
-req_vendas <- request(url_vendas)
-resp_vendas <- request(url_vendas) |> req_perform()
-txt <- resp_body_string(resp_vendas)
-txt_limpo <- gsub("\\bNaN\\b", "null", txt)
-dados_vendas <- jsonlite::fromJSON(txt_limpo)
+arquivo_rmd <- knitr::current_input(dir = TRUE)
+pasta_pipeline <- if (!is.null(arquivo_rmd)) {
+  dirname(normalizePath(arquivo_rmd, mustWork = TRUE))
+} else if (file.exists("pipeline/etl.Rmd")) {
+  normalizePath("pipeline")
+} else {
+  getwd() # Execução interativa a partir da pasta pipeline.
+}
+pasta_raw <- file.path(pasta_pipeline, "raw_data")
+pasta_clean <- file.path(pasta_pipeline, "clean_data")
 
-req_vendedores <- request(url_vendedores)
-resp_vendedores <- req_perform(req_vendedores)
-dados_vendedores <- resp_body_json(resp_vendedores)
+# O contrato de colunas vem das tabelas e do gerador já existentes no projeto.
+# IDs ficam como texto: são chaves, não medidas para calcular médias ou IQR.
+campos_id <- list(
+  vendas = c("id_venda", "id_cliente", "id_produto", "id_vendedor"),
+  vendedores = "id_vendedor", clientes = "id_cliente",
+  promocoes = "id_promocao", estoque = "id_produto",
+  crediario = c("id_parcela", "id_cliente", "id_venda")
+)
+campos_numericos <- list(
+  vendas = c("quantidade", "preco_unitario", "desconto", "valor_total"),
+  vendedores = "meta_mensal", clientes = "idade",
+  promocoes = c("desconto", "vendas_antes", "vendas_durante"),
+  estoque = c("preco_unitario", "estoque_minimo", "estoque_maximo",
+              "quantidade_entrada", "quantidade_saida", "estoque_atual", "estoque_fisico"),
+  crediario = c("valor_parcela", "valor_em_aberto", "dias_atraso")
+)
+campos_datas <- list(
+  vendas = "data_venda", vendedores = "data_contratacao", clientes = "data_cadastro",
+  promocoes = c("data_inicio", "data_fim"),
+  estoque = c("data_entrada", "ultima_venda"),
+  crediario = c("data_vencimento", "data_pagamento")
+)
+campos_texto <- list(
+  vendas = c("canal", "categoria", "cor", "forma_pagamento", "hora_venda", "produto", "tamanho"),
+  vendedores = c("cidade_loja", "nome"), clientes = c("canal_preferencial", "cidade"),
+  promocoes = c("categoria", "produto", "tipo_desconto"),
+  estoque = c("categoria", "cor", "produto", "tamanho"), crediario = "status"
+)
+tabelas <- names(campos_id)
+colunas_esperadas <- set_names(map(tabelas, function(nome) {
+  c(campos_id[[nome]], campos_numericos[[nome]], campos_datas[[nome]], campos_texto[[nome]])
+}), tabelas)
+chaves <- c(vendas = "id_venda", vendedores = "id_vendedor", clientes = "id_cliente",
+            promocoes = "id_promocao", estoque = "id_produto", crediario = "id_parcela")
+campos_inteiros <- list(
+  vendas = "quantidade", vendedores = character(), clientes = "idade",
+  promocoes = c("vendas_antes", "vendas_durante"),
+  estoque = setdiff(campos_numericos$estoque, "preco_unitario"), crediario = "dias_atraso"
+)
 
-req_clientes <- request(url_clientes)
-resp_clientes <- req_perform(req_clientes)
-dados_clientes <- resp_body_json(resp_clientes)
-
-req_promocoes <- request(url_promocoes)
-resp_promocoes <- req_perform(req_promocoes)
-dados_promocoes <- resp_body_json(resp_promocoes)
-
-req_estoque <- request(url_estoque)
-resp_estoque <- req_perform(req_estoque)
-dados_estoque <- resp_body_json(resp_estoque)
-
-req_crediario <- request(url_crediario)
-resp_crediario <- req_perform(req_crediario)
-dados_crediario <- resp_body_json(resp_crediario)
-```
-
-```{r}
-df_vendas <- as.data.frame(dados_vendas)
-df_vendedores <- dplyr::bind_rows(dados_vendedores)
-df_clientes <- dplyr::bind_rows(dados_clientes)
-df_crediario <- dplyr::bind_rows(dados_crediario)
-df_promocoes <- dplyr::bind_rows(dados_promocoes)
-df_estoque <- dplyr::bind_rows(dados_estoque)
-
-write.csv(df_vendas, "./data/vendas.csv", row.names = FALSE)
-write.csv(df_vendedores, "./data/vendedores.csv", row.names = FALSE)
-write.csv(df_clientes, "./data/clientes.csv", row.names = FALSE)
-write.csv(df_crediario, "./data/crediario.csv", row.names = FALSE)
-write.csv(df_promocoes, "./data/promocoes.csv", row.names = FALSE)
-write.csv(df_estoque, "./data/estoque.csv", row.names = FALSE)
-```
-
-
-```{r}
-clientes_raw   <- read.csv("./data/clientes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-crediario_raw  <- read.csv("./data/crediario.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-estoque_raw    <- read.csv("./data/estoque.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-promocoes_raw  <- read.csv("./data/promocoes.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-vendas_raw     <- read.csv("./data/vendas.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-vendedores_raw <- read.csv("./data/vendedores.csv", stringsAsFactors = FALSE, encoding = "UTF-8")
-```
-
-```{r}
-diagnosticar_dataset <- function(df, nome_df) {
-  cat("\n==================================================\n")
-  cat(" DIAGNÓSTICO:", nome_df, "\n")
-  cat("==================================================\n")
-  cat("Dimensões:", nrow(df), "linhas x", ncol(df), "colunas\n")
-  cat("Registros duplicados totais:", sum(duplicated(df)), "\n")
-  cat("\nValores Nulos por Coluna:\n")
-  print(colSums(is.na(df) | df == "" | df == "null"))
+mostrar <- function(x, digits = 2) print(knitr::kable(x, digits = digits))
+eh_ausente <- function(x) {
+  is.na(x) | str_to_lower(str_squish(as.character(x))) %in% c("", "na", "nan", "null")
+}
+normalizar_texto <- function(x) {
+  x <- str_squish(as.character(x))
+  x[eh_ausente(x)] <- NA_character_
+  x
 }
 
-diagnosticar_dataset(clientes_raw, "Clientes Raw")
-diagnosticar_dataset(crediario_raw, "Crediário Raw")
-diagnosticar_dataset(estoque_raw, "Estoque Raw")
-diagnosticar_dataset(vendas_raw, "Vendas Raw")
-```
-
-```{r}
-limpar_moeda <- function(x) {
-  if (is.numeric(x)) return(x)
-  x %>%
-    as.character() %>%
-    str_replace_all("R\\$", "") %>%
-    str_replace_all("\\s", "") %>%
-    str_replace_all("\\.", "") %>%
-    str_replace_all(",", ".") %>%
-    as.numeric()
+# Aceita decimal da API (1234.56), notação científica e moeda brasileira
+# (R$ 1.234,56). Um ponto isolado é decimal, como na API: 123.45 não vira 12345.
+# A expressão exige um número completo: "12abc" não é convertido para 12.
+converter_numero <- function(x) {
+  x <- normalizar_texto(x)
+  x <- str_remove(x, "^R\\$\\s*")
+  x <- str_remove_all(x, "[[:space:]\\u00a0]")
+  brasileiro <- str_detect(x, "^[+-]?(?:[0-9]+|[0-9]{1,3}(?:\\.[0-9]{3})+),[0-9]+$") %in% TRUE
+  x[brasileiro] <- str_replace(str_remove_all(x[brasileiro], "\\."), ",", ".")
+  valido <- str_detect(x, "^[+-]?(?:[0-9]+(?:\\.[0-9]*)?|\\.[0-9]+)(?:[eE][+-]?[0-9]+)?$") %in% TRUE
+  resultado <- rep(NA_real_, length(x))
+  resultado[valido] <- as.double(x[valido])
+  resultado[!is.finite(resultado)] <- NA_real_
+  resultado
+}
+converter_data <- function(x) {
+  # Os formatos com dia primeiro são os usados nas aulas e pelo simulador.
+  # Datas impossíveis ficam NA; não se troca automaticamente dia por mês.
+  as.Date(parse_date_time(normalizar_texto(x), quiet = TRUE, tz = "UTC", exact = TRUE,
+    orders = c("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y", "%d-%m-%y",
+               "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%OSZ")))
+}
+tipar_tabela <- function(df, nome) {
+  df <- clean_names(df)
+  df[campos_numericos[[nome]]] <- map(df[campos_numericos[[nome]]], converter_numero)
+  df[campos_datas[[nome]]] <- map(df[campos_datas[[nome]]], converter_data)
+  df
 }
 
-# Função para parsing flexível de datas (DD/MM/YYYY ou YYYY-MM-DD)
-padronizar_data <- function(x) {
-  if (inherits(x, "Date")) return(x)
-  as.Date(parse_date_time(x, orders = c("Ymd", "dmY", "Ymd HMS", "dmY HMS")))
+# Dicionários explícitos do simulador: variações desconhecidas são preservadas
+# para revisão, em vez de aproximadas por correspondências parciais.
+dominios <- list(
+  categoria = c("Camiseta", "Blusa", "Bermuda", "Jaqueta", "Calça", "Acessório", "Vestido"),
+  cor = c("Verde", "Rosa", "Branca", "Preta", "Vermelha", "Azul", "Cinza"),
+  tamanho = c("P", "M", "G", "GG"), canal = c("Online", "Física"),
+  canal_preferencial = c("Online", "Física"),
+  forma_pagamento = c("Cartão de Débito", "Cartão de Crédito", "PIX", "Dinheiro", "Crediário"),
+  status = c("Pago", "Em aberto", "Atrasado"), tipo_desconto = c("Percentual", "Valor Fixo")
+)
+chave_texto <- function(x) {
+  str_to_lower(iconv(normalizar_texto(x), from = "UTF-8", to = "ASCII//TRANSLIT"))
+}
+padronizar_categoria <- function(x, coluna) {
+  x <- normalizar_texto(x)
+  dominio <- dominios[[coluna]]
+  mapa <- set_names(dominio, chave_texto(dominio))
+  if (coluna == "forma_pagamento") {
+    mapa <- c(mapa, "cartao credito" = "Cartão de Crédito", "cartao debito" = "Cartão de Débito")
+  }
+  convertido <- unname(mapa[chave_texto(x)])
+  if_else(is.na(convertido), x, convertido)
+}
+cidades <- c("Tambaú", "Mococa", "Vargem Grande do Sul", "São João da Boa Vista",
+             "Aguaí", "Casa Branca", "São José do Rio Pardo", "Itobi")
+# Reproduz apenas as corrupções de encoding documentadas em quebras.py.
+mojibake <- c("á" = "Ã¡", "ã" = "Ã£", "â" = "Ã¢", "à" = "Ã ", "é" = "Ã©",
+              "ê" = "Ãª", "í" = "Ã\u00ad", "ó" = "Ã³", "õ" = "Ãµ", "ô" = "Ã´",
+              "ú" = "Ãº", "ç" = "Ã§")
+mapa_cidades <- c(set_names(cidades, chave_texto(cidades)),
+                  set_names(cidades, chave_texto(str_replace_all(cidades, mojibake))))
+padronizar_cidade <- function(x) {
+  x <- normalizar_texto(x)
+  convertido <- unname(mapa_cidades[chave_texto(x)])
+  if_else(is.na(convertido), x, convertido)
 }
 ```
 
-```{r}
-clientes_clean <- clientes_raw %>%
-  clean_names() %>%
-  distinct(id_cliente, .keep_all = TRUE) %>% # Elimina duplicatas de ID
-  mutate(
-    # Correção de Encoding e Padronização de Cidades
-    cidade = str_trim(cidade),
-    cidade = case_when(
-      str_detect(cidade, "Tamba|TambaÃº") ~ "Tambaú",
-      str_detect(cidade, "SÃ£o JoÃ£o|São João") ~ "São João da Boa Vista",
-      str_detect(cidade, "Agua|AguaÃ\xad") ~ "Aguaí",
-      str_detect(cidade, "SÃ£o JosÃ©|São José") ~ "São José do Rio Pardo",
-      TRUE ~ cidade
-    ),
-    # Padronização de Casing no Canal
-    canal_preferencial = str_to_title(str_trim(canal_preferencial)),
-    canal_preferencial = case_when(
-      str_detect(canal_preferencial, "(?i)física|fisica") ~ "Física",
-      str_detect(canal_preferencial, "(?i)online") ~ "Online",
-      TRUE ~ canal_preferencial
-    ),
-    # Tratamento de Outliers de Idade
-    idade = ifelse(idade < 15 | idade > 100, NA_integer_, as.integer(idade)),
-    data_cadastro = padronizar_data(data_cadastro)
+# Extração da API e exportação para `raw_data/`
+
+A coleta faz uma requisição por tabela e mantém os endpoints existentes. Não
+padroniza textos, moedas, datas, linhas ou nomes de colunas. O Flask pode
+emitir o token não padrão `NaN`: somente esse token **fora de strings JSON** é
+representado como `null`, preservando seu significado de valor ausente. Um
+texto como `"NaN"` ou `"Produto NaN"` continua intacto nesta etapa.
+
+```{r extracao}
+url_base <- "http://192.168.122.92:5000/api/tabelas"
+endpoints <- set_names(paste0(url_base, "/", tabelas), tabelas)
+arquivos_raw <- set_names(file.path(pasta_raw, paste0(tabelas, ".csv")), tabelas)
+
+extrair_tabela <- function(url, nome) {
+  tryCatch({
+    resposta <- request(url) |> req_timeout(30) |> req_perform()
+    texto <- resp_body_string(resposta)
+    # SKIP/F evita substituir conteúdo de strings, inclusive aspas escapadas.
+    texto_json <- gsub('"(?:[^"\\\\]|\\\\.)*"(*SKIP)(*F)|\\bNaN\\b',
+                       "null", texto, perl = TRUE)
+    if (!identical(texto, texto_json)) message(nome, ": NaN JSON representado como ausente.")
+    if (!str_detect(str_trim(texto_json), "^\\[")) stop("Era esperado um array de registros JSON.")
+    df <- fromJSON(texto_json, simplifyDataFrame = TRUE)
+    if (is.list(df) && length(df) == 0L) {
+      df <- as_tibble(set_names(rep(list(character()), length(colunas_esperadas[[nome]])),
+                               colunas_esperadas[[nome]]))
+    }
+    if (!is.data.frame(df) || any(vapply(df, is.list, logical(1)))) {
+      stop("Resposta não tabular ou com colunas aninhadas.")
+    }
+    faltantes <- setdiff(colunas_esperadas[[nome]], names(df))
+    if (length(faltantes)) stop("Colunas ausentes: ", paste(faltantes, collapse = ", "))
+    as_tibble(df, .name_repair = "check_unique")
+  }, error = function(e) {
+    stop(sprintf("Falha na coleta de '%s' (%s): %s", nome, url, conditionMessage(e)), call. = FALSE)
+  })
+}
+
+if (isTRUE(params$atualizar_api)) {
+  # Valida as seis respostas antes de substituir qualquer CSV de uma coleta anterior.
+  dados_api <- imap(endpoints, extrair_tabela)
+  dir.create(pasta_raw, showWarnings = FALSE, recursive = TRUE)
+  iwalk(dados_api, function(df, nome) write_csv(df, arquivos_raw[[nome]], na = "NA"))
+  rm(dados_api)
+} else if (!all(file.exists(arquivos_raw))) {
+  stop("Modo sem coleta: faltam CSVs em raw_data/: ",
+       paste(names(arquivos_raw)[!file.exists(arquivos_raw)], collapse = ", "))
+}
+mostrar(tibble(tabela = tabelas, arquivo = basename(arquivos_raw),
+               modificado_em = as.character(file.info(arquivos_raw)$mtime),
+               origem = if (isTRUE(params$atualizar_api)) "API nesta execução" else "Extração anterior"))
+```
+
+# Leitura dos dados brutos
+
+Todas as colunas são lidas inicialmente como texto, sem aparar espaços nem
+interpretar marcadores de ausência. Assim, diferenças de formatação e IDs com
+zeros à esquerda ficam visíveis. A cópia `dados_analise` converte somente
+números e datas para permitir cálculos; `dados_raw` e os CSVs brutos permanecem
+intactos. Falhas dessa conversão também aparecem no diagnóstico.
+
+```{r leitura}
+dados_raw <- map(arquivos_raw, function(arquivo) {
+  read_csv(arquivo, col_types = cols(.default = col_character()),
+           na = character(), trim_ws = FALSE, name_repair = "check_unique",
+           show_col_types = FALSE)
+})
+iwalk(dados_raw, function(df, nome) {
+  faltantes <- setdiff(colunas_esperadas[[nome]], names(df))
+  if (length(faltantes)) stop(nome, ": colunas ausentes no CSV: ", paste(faltantes, collapse = ", "))
+})
+dados_analise <- imap(dados_raw, tipar_tabela)
+```
+
+# Diagnóstico e estatística descritiva
+
+```{r diagnostico}
+diagnosticar <- function(df, nome) {
+  tibble(tabela = nome, linhas = nrow(df), colunas = ncol(df),
+         ausentes = sum(vapply(df, function(x) sum(eh_ausente(x)), integer(1))),
+         duplicatas_completas = sum(duplicated(df)))
+}
+diagnostico_antes <- imap_dfr(dados_raw, diagnosticar)
+mostrar(diagnostico_antes)
+
+diagnostico_variaveis <- imap_dfr(dados_raw, function(df, nome) {
+  imap_dfr(df, function(x, coluna) {
+    convertido <- dados_analise[[nome]][[janitor::make_clean_names(coluna)]]
+    tibble(tabela = nome, variavel = coluna, tipo_csv = class(x)[1],
+           tipo_analise = class(convertido)[1], ausentes = sum(eh_ausente(x)),
+           percentual_ausente = if (length(x)) 100 * mean(eh_ausente(x)) else NA_real_,
+           falhas_conversao = sum(!eh_ausente(x) & is.na(convertido)))
+  })
+})
+mostrar(diagnostico_variaveis)
+
+# Um ID repetido pode representar vários itens ou versões conflitantes.
+# Conte as variantes antes de decidir: não usamos distinct(id, .keep_all = TRUE).
+ids_repetidos <- imap_dfr(dados_raw, function(df, nome) {
+  df |>
+    filter(!eh_ausente(.data[[chaves[[nome]]]])) |>
+    group_by(across(all_of(chaves[[nome]]))) |>
+    summarise(registros = n(), variantes = nrow(distinct(pick(everything()))), .groups = "drop") |>
+    filter(registros > 1) |>
+    rename(identificador = all_of(chaves[[nome]])) |>
+    mutate(tabela = nome, .before = 1)
+})
+mostrar(ids_repetidos)
+```
+
+Ausência de `id_cliente` em vendas pode corresponder a uma venda sem cadastro;
+ausência de `data_pagamento` pode ser esperada em parcelas abertas. Não há
+imputação por média, mediana, zero ou categoria mais frequente.
+
+```{r estatistica}
+modas <- function(x) {
+  x <- x[!eh_ausente(x)]
+  if (!length(x)) return(NA_character_)
+  frequencias <- table(x)
+  if (max(frequencias) == 1) return("Sem repetição")
+  vencedores <- names(frequencias)[frequencias == max(frequencias)]
+  # Não escolhe arbitrariamente uma moda quando há empate.
+  paste0(paste(head(vencedores, 5), collapse = "; "),
+         if (length(vencedores) > 5) " (demais modas omitidas)" else "")
+}
+resumir_numero <- function(x) {
+  x <- x[is.finite(x)]
+  n <- length(x)
+  quartis <- if (n) unname(quantile(x, c(.25, .5, .75))) else rep(NA_real_, 3)
+  tibble(n_validos = n, media = if (n) mean(x) else NA_real_, mediana = quartis[2],
+         moda = modas(x), minimo = if (n) min(x) else NA_real_,
+         maximo = if (n) max(x) else NA_real_,
+         amplitude = if (n) diff(range(x)) else NA_real_,
+         variancia = if (n > 1) var(x) else NA_real_,
+         desvio_padrao = if (n > 1) sd(x) else NA_real_,
+         q1 = quartis[1], q3 = quartis[3], iqr = quartis[3] - quartis[1])
+}
+estatisticas_antes <- imap_dfr(dados_analise, function(df, nome) {
+  map_dfr(campos_numericos[[nome]], function(coluna) {
+    resumir_numero(df[[coluna]]) |> mutate(tabela = nome, variavel = coluna, .before = 1)
+  })
+}) |>
+  mutate(limite_iqr_inferior = q1 - 1.5 * iqr, limite_iqr_superior = q3 + 1.5 * iqr)
+# Divide posição e dispersão para manter as tabelas legíveis no relatório.
+mostrar(estatisticas_antes |>
+  select(tabela, variavel, n_validos, media, mediana, moda, minimo, maximo, amplitude))
+mostrar(estatisticas_antes |>
+  select(tabela, variavel, variancia, desvio_padrao, q1, q3, iqr,
+         limite_iqr_inferior, limite_iqr_superior))
+
+campos_categoricos <- list(
+  vendas = c("categoria", "forma_pagamento", "canal", "tamanho"),
+  vendedores = "cidade_loja", clientes = c("cidade", "canal_preferencial"),
+  promocoes = c("categoria", "tipo_desconto"),
+  estoque = c("categoria", "cor", "tamanho"), crediario = "status"
+)
+frequencias_antes <- imap_dfr(dados_raw, function(df, nome) {
+  map_dfr(campos_categoricos[[nome]], function(coluna) {
+    tibble(categoria = if_else(eh_ausente(df[[coluna]]), "<ausente>", df[[coluna]])) |>
+      count(categoria, sort = TRUE) |>
+      mutate(percentual = 100 * n / sum(n), tabela = nome, variavel = coluna, .before = 1)
+  })
+})
+mostrar(frequencias_antes)
+mostrar(imap_dfr(dados_raw, function(df, nome) {
+  map_dfr(campos_categoricos[[nome]], function(coluna) {
+    tibble(tabela = nome, variavel = coluna, moda = modas(df[[coluna]]))
+  })
+}))
+```
+
+Média e desvio padrão são sensíveis a valores extremos. A comparação com a
+mediana e o IQR ajuda a perceber assimetrias. Variância e desvio padrão são
+amostrais (`var()` e `sd()`); com menos de duas observações ficam indefinidos.
+Tabelas vazias ou colunas inteiramente ausentes não produzem mínimos infinitos.
+
+# Visualização exploratória dos dados
+
+Os gráficos usam a cópia de análise **antes da limpeza**. Conversões impossíveis
+são contadas acima e não entram nos gráficos numéricos. Valores negativos e
+extremos ainda entram. IDs não são tratados como medidas quantitativas.
+
+```{r histogramas-boxplots}
+variaveis_graficos <- list(
+  vendas = c("valor_total", "preco_unitario", "quantidade", "desconto"),
+  vendedores = "meta_mensal", clientes = "idade",
+  promocoes = c("vendas_antes", "vendas_durante", "desconto"),
+  estoque = c("preco_unitario", "estoque_atual", "estoque_fisico", "quantidade_saida"),
+  crediario = c("valor_parcela", "valor_em_aberto", "dias_atraso")
+)
+for (nome in tabelas) {
+  medidas <- dados_analise[[nome]] |>
+    select(all_of(variaveis_graficos[[nome]])) |>
+    pivot_longer(everything(), names_to = "variavel", values_to = "valor") |>
+    filter(is.finite(valor))
+  if (!nrow(medidas)) next
+  centros <- medidas |> group_by(variavel) |>
+    summarise(media = mean(valor), mediana = median(valor), .groups = "drop")
+  print(ggplot(medidas, aes(valor)) +
+    geom_histogram(bins = 25, fill = "steelblue", color = "white") +
+    geom_vline(data = centros, aes(xintercept = media, linetype = "Média"), color = "red3") +
+    geom_vline(data = centros, aes(xintercept = mediana, linetype = "Mediana"), color = "darkgreen") +
+    facet_wrap(~variavel, scales = "free", ncol = 2) +
+    labs(title = paste("Distribuições brutas —", nome), x = "Valor", y = "Frequência", linetype = NULL))
+  print(ggplot(medidas, aes(x = "", y = valor)) +
+    geom_boxplot(fill = "skyblue", outlier.color = "red3") +
+    facet_wrap(~variavel, scales = "free_y", ncol = 2) +
+    labs(title = paste("Quartis e possíveis outliers —", nome), x = NULL, y = "Valor",
+         caption = "Pontos além de 1,5 × IQR são alertas para avaliação; não motivam exclusão automática."))
+}
+```
+
+Os histogramas mostram assimetria e separação entre média e mediana. Os
+boxplots localizam idades incompatíveis com o cadastro e possíveis quantidades
+negativas. Preços e parcelas altos podem ser legítimos: sua posição no boxplot
+será confrontada com as relações entre variáveis e com as regras do gerador.
+
+```{r dispersao}
+pares <- list(
+  vendas = c("quantidade", "valor_total"), estoque = c("estoque_atual", "estoque_fisico"),
+  crediario = c("valor_parcela", "valor_em_aberto"), promocoes = c("vendas_antes", "vendas_durante")
+)
+for (nome in names(pares)) {
+  par <- pares[[nome]]
+  df <- dados_analise[[nome]] |>
+    filter(is.finite(.data[[par[1]]]), is.finite(.data[[par[2]]]))
+  if (!nrow(df)) next
+  grafico <- ggplot(df, aes(x = .data[[par[1]]], y = .data[[par[2]]])) +
+    geom_point(alpha = .35, color = "steelblue") +
+    labs(title = paste("Relação entre medidas brutas —", nome), x = par[1], y = par[2])
+  if (nome %in% c("estoque", "crediario")) {
+    grafico <- grafico + geom_abline(slope = 1, intercept = 0, linetype = "dashed")
+  }
+  print(grafico)
+}
+```
+
+Na dispersão de vendas, um total alto pode resultar de mais peças ou de preço
+unitário alto. No estoque, afastamento da diagonal evidencia divergência de
+contagem, mas não determina qual saldo está correto. No crediário, saldo zero
+pode ser esperado para parcelas pagas; saldo acima da parcela exige revisão.
+
+```{r barras}
+for (nome in tabelas) {
+  frequencias <- frequencias_antes |> filter(tabela == nome) |>
+    group_by(variavel) |> slice_max(n, n = 12, with_ties = FALSE) |> ungroup()
+  if (!nrow(frequencias)) next
+  print(ggplot(frequencias, aes(x = paste0("«", categoria, "»"), y = n)) +
+    geom_col(fill = "steelblue") + coord_flip() +
+    facet_wrap(~variavel, scales = "free", ncol = 2) +
+    labs(title = paste("Categorias sem padronização —", nome), x = NULL, y = "Registros",
+         caption = "Até 12 categorias por variável; a tabela contém todas. « » delimitam espaços."))
+}
+```
+
+Variações de caixa, acento e espaços nas barras fundamentam os dicionários
+explícitos de padronização. Uma categoria desconhecida é um alerta, não uma
+autorização para escolher uma categoria parecida.
+
+```{r media-desvio-padrao}
+# Preços dentro da mesma categoria são mais comparáveis do que preços de
+# produtos misturados. Exigimos ao menos cinco preços para exibir cada grupo.
+precos_categoria <- dados_analise$estoque |>
+  filter(is.finite(preco_unitario), !eh_ausente(categoria)) |>
+  group_by(categoria) |>
+  summarise(n = n(), media = mean(preco_unitario), mediana = median(preco_unitario),
+            dp = sd(preco_unitario), .groups = "drop") |>
+  filter(n >= 5, is.finite(dp))
+if (nrow(precos_categoria)) {
+  print(ggplot(precos_categoria, aes(x = categoria, y = media)) +
+    geom_errorbar(aes(ymin = media - dp, ymax = media + dp), width = .2) +
+    geom_point(color = "steelblue", size = 3) +
+    geom_point(aes(y = mediana), color = "darkgreen", shape = 4, size = 3) + coord_flip() +
+    labs(title = "Preço bruto por categoria: média ± um desvio padrão",
+         x = "Categoria original", y = "Preço unitário (R$)",
+         caption = "Cruz verde: mediana. Barras descrevem dispersão; não são intervalos de confiança nem limites de validade."))
+} else {
+  cat("Não há categorias com pelo menos cinco preços para o gráfico de média e desvio padrão.")
+}
+```
+
+# Identificação e interpretação de inconsistências e outliers
+
+As regras abaixo separam erros verificáveis de situações que precisam de
+conciliação. O catálogo do simulador admite tamanhos P, M, G e GG; valores fora
+desse domínio viram `NA`. Idades não positivas ou acima de 120 anos são
+consideradas inválidas neste cadastro, sem cortar idades apenas por estarem
+fora do intervalo mais frequente. O limite é uma regra explícita e revisável,
+não uma conclusão do boxplot. O gerador identifica quantidades negativas como
+erros de PDV/estoque; as linhas continuam no dataset com o campo inválido `NA`.
+
+```{r regras-validade}
+avaliar_regras <- function(df, nome) {
+  achados <- tibble(linha_origem = integer(), coluna = character(), regra = character(), acao = character())
+  linhas <- if ("linha_origem" %in% names(df)) df$linha_origem else seq_len(nrow(df))
+  registrar <- function(mascara, coluna, regra, acao = "Revisar; preservar valor") {
+    indices <- which(mascara %in% TRUE)
+    achados <<- bind_rows(achados, tibble(linha_origem = linhas[indices], coluna = coluna,
+                                        regra = regra, acao = acao))
+  }
+  for (coluna in campos_numericos[[nome]]) {
+    registrar(df[[coluna]] < 0, coluna, "Número negativo fora do domínio", "Substituir por NA")
+  }
+  for (coluna in campos_inteiros[[nome]]) {
+    registrar(df[[coluna]] != trunc(df[[coluna]]), coluna, "Contagem fracionária", "Substituir por NA")
+  }
+  positivos <- intersect(names(df), c("quantidade", "preco_unitario", "valor_parcela"))
+  for (coluna in positivos) {
+    registrar(df[[coluna]] == 0, coluna, "Medida deve ser positiva", "Substituir por NA")
+  }
+  for (coluna in intersect(names(df), names(dominios))) {
+    x <- padronizar_categoria(df[[coluna]], coluna)
+    registrar(!eh_ausente(x) & !x %in% dominios[[coluna]], coluna, "Categoria fora do catálogo",
+              if (coluna == "tamanho") "Substituir por NA" else "Revisar; preservar valor")
+  }
+  if (nome == "clientes") {
+    registrar(df$idade <= 0 | df$idade > 120, "idade", "Idade fora do domínio do cadastro", "Substituir por NA")
+  }
+  if (nome == "vendas") {
+    bruto <- df$quantidade * df$preco_unitario
+    registrar(df$quantidade > 0 & df$preco_unitario > 0 & df$desconto > bruto,
+              "desconto", "Desconto supera o valor bruto", "Substituir por NA")
+    registrar(df$quantidade > 0 & df$preco_unitario > 0 & df$desconto >= 0 & df$desconto <= bruto &
+                abs(df$valor_total - round(bruto - df$desconto, 2)) > .02,
+              "valor_total", "Total informado diverge do cálculo (tolerância R$ 0,02)")
+    hora <- normalizar_texto(df$hora_venda)
+    registrar(!is.na(hora) & !str_detect(hora, "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"),
+              "hora_venda", "Hora fora do formato HH:MM", "Substituir por NA")
+  }
+  if (nome == "estoque") {
+    registrar(df$estoque_fisico != df$estoque_atual, "estoque_fisico", "Estoque físico difere do sistema")
+    # O gerador limita o saldo contábil a zero; saída > entrada não é corrigida.
+    registrar(df$quantidade_saida >= 0 &
+                df$estoque_atual != pmax(df$quantidade_entrada - df$quantidade_saida, 0),
+              "estoque_atual", "Saldo difere da regra contábil do simulador")
+    registrar(df$estoque_minimo > df$estoque_maximo, "estoque_maximo", "Estoque mínimo supera máximo")
+    registrar(df$ultima_venda < df$data_entrada, "ultima_venda", "Última venda anterior à entrada")
+  }
+  if (nome == "promocoes") {
+    registrar(df$data_fim < df$data_inicio, "data_fim", "Fim anterior ao início da promoção")
+    registrar(padronizar_categoria(df$tipo_desconto, "tipo_desconto") == "Percentual" & df$desconto > 1,
+              "desconto", "Desconto percentual fora de [0, 1]", "Substituir por NA")
+  }
+  if (nome == "crediario") {
+    status <- padronizar_categoria(df$status, "status")
+    registrar(status == "Pago" & abs(df$valor_em_aberto) > .005,
+              "valor_em_aberto", "Parcela paga com saldo em aberto")
+    registrar(df$valor_em_aberto > df$valor_parcela + .02,
+              "valor_em_aberto", "Saldo supera valor da parcela")
+    registrar(status == "Pago" & is.na(df$data_pagamento), "data_pagamento", "Parcela paga sem data de pagamento")
+  }
+  achados |> mutate(tabela = nome, .before = 1)
+}
+inconsistencias_antes <- imap_dfr(dados_analise, avaliar_regras)
+mostrar(inconsistencias_antes |> count(tabela, coluna, regra, acao, name = "ocorrencias"))
+# Amostras remetem à posição do registro no CSV bruto (sem contar o cabeçalho).
+mostrar(inconsistencias_antes |> group_by(tabela, regra) |> slice_head(n = 3) |> ungroup())
+```
+
+```{r referencias}
+validar_referencias <- function(bases) {
+  relacoes <- tribble(
+    ~origem, ~coluna, ~destino,
+    "vendas", "id_cliente", "clientes", "vendas", "id_vendedor", "vendedores",
+    "vendas", "id_produto", "estoque", "crediario", "id_cliente", "clientes",
+    "crediario", "id_venda", "vendas"
   )
+  pmap_dfr(relacoes, function(origem, coluna, destino) {
+    ids <- normalizar_texto(bases[[origem]][[coluna]])
+    validos <- normalizar_texto(bases[[destino]][[coluna]])
+    linhas <- if ("linha_origem" %in% names(bases[[origem]])) bases[[origem]]$linha_origem else seq_along(ids)
+    indices <- which(!is.na(ids) & !ids %in% validos)
+    tibble(tabela = origem, coluna = coluna, destino = destino,
+           linha_origem = linhas[indices], identificador = ids[indices])
+  })
+}
+referencias_antes <- validar_referencias(dados_analise)
+mostrar(referencias_antes |> count(tabela, coluna, destino, name = "referencias_ausentes"))
+```
 
-# 5.2 Estoque
-estoque_clean <- estoque_raw %>%
-  clean_names() %>%
-  distinct(id_produto, .keep_all = TRUE) %>%
-  mutate(
-    categoria = str_to_title(str_trim(categoria)),
-    produto = str_trim(produto),
-    cor = str_to_title(str_trim(cor)),
-    tamanho = str_to_upper(str_trim(tamanho)),
-    tamanho = ifelse(tamanho %in% c("P", "M", "G", "GG"), tamanho, NA_character_), # Invalida tamanhos inconsistentes (ex: XXXG)
-    preco_unitario = limpar_moeda(preco_unitario),
-    data_entrada   = padronizar_data(data_entrada),
-    ultima_venda   = padronizar_data(ultima_venda),
-    
-    # Cálculo de Variáveis Derivadas e Auditoria
-    calc_estoque   = quantidade_entrada - quantidade_saida,
-    divergencia_fisico_sistema = estoque_atual != estoque_fisico,
-    status_estoque = case_when(
-      estoque_fisico < estoque_minimo ~ "Ruptura / Abaixo do Mínimo",
-      estoque_fisico > estoque_maximo ~ "Excesso / Overstock",
-      TRUE ~ "Ideal"
+```{r detectar-outliers}
+detectar_outliers <- function(bases, limites) {
+  pmap_dfr(limites, function(tabela, variavel, n_validos, media, desvio_padrao,
+                            limite_iqr_inferior, limite_iqr_superior, ...) {
+    df <- bases[[tabela]]
+    x <- df[[variavel]]
+    linhas <- if ("linha_origem" %in% names(df)) df$linha_origem else seq_along(x)
+    # IQR com n < 4 e z-score sem dispersão não oferecem sinal útil aqui.
+    sinal_iqr <- n_validos >= 4 & is.finite(x) &
+      (x < limite_iqr_inferior | x > limite_iqr_superior)
+    sinal_dp <- n_validos >= 3 & is.finite(desvio_padrao) & desvio_padrao > 0 &
+      is.finite(x) & abs(x - media) > 3 * desvio_padrao
+    tibble(tabela = tabela, linha_origem = linhas, variavel = variavel, valor = x,
+           outlier_iqr = sinal_iqr %in% TRUE, outlier_dp = sinal_dp %in% TRUE) |>
+      filter(outlier_iqr | outlier_dp)
+  })
+}
+outliers_antes <- detectar_outliers(dados_analise, estatisticas_antes)
+mostrar(outliers_antes |> group_by(tabela, variavel) |>
+  summarise(iqr = sum(outlier_iqr), tres_dp = sum(outlier_dp), .groups = "drop"))
+mostrar(outliers_antes |> group_by(tabela, variavel) |> slice_head(n = 5) |> ungroup())
+
+# Liga o sinal estatístico à evidência de erro na mesma célula. Estar longe da
+# média, por si só, não autoriza invalidar um preço ou uma parcela.
+evidencias_outliers <- outliers_antes |>
+  left_join(inconsistencias_antes |> filter(acao == "Substituir por NA") |>
+              distinct(tabela, linha_origem, variavel = coluna) |>
+              mutate(erro_dominio = TRUE),
+            by = c("tabela", "linha_origem", "variavel")) |>
+  group_by(tabela, variavel) |>
+  summarise(sinalizados = n(), com_erro_dominio = sum(erro_dominio %in% TRUE),
+            sem_erro_comprovado = sum(is.na(erro_dominio)), .groups = "drop") |>
+  left_join(estatisticas_antes |> select(tabela, variavel, media, mediana, q1, q3, iqr),
+            by = c("tabela", "variavel"))
+mostrar(evidencias_outliers)
+```
+
+O critério IQR usa limites Q1 − 1,5 × IQR e Q3 + 1,5 × IQR. O segundo alerta
+marca distância superior a três desvios padrão da média; assimetria e extremos
+podem distorcer esse critério, e não se pressupõe normalidade. Com IQR zero,
+qualquer valor diferente do centro pode receber alerta; isso é especialmente
+comum em saldos e atrasos com muitos zeros legítimos.
+
+As tabelas acima quantificam os sinais vistos nos gráficos. A decisão segue:
+
+Nesta extração, foram sinalizados `r nrow(outliers_antes)` valores numéricos
+por pelo menos um dos critérios. Desses, `r sum(evidencias_outliers$com_erro_dominio)`
+também violam uma regra de domínio na mesma célula; os demais
+`r sum(evidencias_outliers$sem_erro_comprovado)` não têm erro comprovado por
+essas regras. Essa distinção fundamenta a preservação de extremos legítimos.
+
+| Evidência | Decisão de limpeza |
+|:--|:--|
+| Linha integralmente igual a outra no CSV bruto | Remover somente a repetição completa, mantendo a primeira posição de origem. |
+| Mesmo ID com valores ou itens diferentes | Preservar as variantes e apresentar a pendência; não escolher uma delas. |
+| Número/data ilegível ou valor fora do domínio explícito | Usar `NA` no campo e registrar a alteração; manter a linha. |
+| Categoria conhecida com caixa, acento ou espaços diferentes | Aplicar o dicionário do simulador; nomes pessoais conservam grafia e títulos. |
+| Preço, quantidade ou parcela além de IQR/3 DP, mas sem violação de domínio | Preservar o valor e sinalizar para avaliação. |
+| Saldo pago divergente, datas invertidas, total divergente ou estoque sem conciliação | Preservar os valores e marcar revisão; não presumir qual campo está errado. |
+| Chave estrangeira sem correspondente na extração | Preservar a chave e a linha; listar a referência ausente. |
+
+# Processamento e limpeza
+
+Nenhum valor ausente será preenchido. O aumento de `NA` pode representar a
+identificação explícita de um erro antes escondido em texto ou em um número
+inválido. As regras também são avaliadas depois da limpeza, para distinguir
+problemas tratados de pendências que ainda dependem de confirmação na origem.
+
+```{r limpeza}
+limpar_tabela <- function(raw, nome) {
+  # Deduplicação ANTES de padronizar: só removemos linhas comprovadamente iguais.
+  manter <- !duplicated(raw)
+  df <- tipar_tabela(raw[manter, , drop = FALSE], nome)
+  df$linha_origem <- which(manter)
+  df <- df |> mutate(across(where(is.character), normalizar_texto))
+  for (coluna in intersect(names(df), names(dominios))) {
+    df[[coluna]] <- padronizar_categoria(df[[coluna]], coluna)
+  }
+  for (coluna in intersect(names(df), c("cidade", "cidade_loja"))) {
+    df[[coluna]] <- padronizar_cidade(df[[coluna]])
+  }
+  invalidos <- avaliar_regras(df, nome) |>
+    filter(acao == "Substituir por NA") |> distinct(linha_origem, coluna)
+  for (coluna in unique(invalidos$coluna)) {
+    indices <- match(invalidos$linha_origem[invalidos$coluna == coluna], df$linha_origem)
+    df[[coluna]][indices] <- NA
+  }
+  for (coluna in campos_inteiros[[nome]]) {
+    # Preserva contagens grandes como double se excederem a capacidade de integer.
+    if (all(is.na(df[[coluna]]) | abs(df[[coluna]]) <= .Machine$integer.max)) {
+      df[[coluna]] <- as.integer(df[[coluna]])
+    }
+  }
+  if (nome == "vendas") {
+    df <- df |> mutate(valor_total_bruto = quantidade * preco_unitario,
+                        valor_total_calculado = round(valor_total_bruto - desconto, 2))
+    # valor_total informado permanece disponível; derivado não encobre divergências.
+  }
+  sinais <- outliers_antes |> filter(tabela == nome)
+  df$outlier_iqr_origem <- df$linha_origem %in% sinais$linha_origem[sinais$outlier_iqr]
+  df$outlier_dp_origem <- df$linha_origem %in% sinais$linha_origem[sinais$outlier_dp]
+  df
+}
+dados_clean <- imap(dados_raw, limpar_tabela)
+inconsistencias_depois <- imap_dfr(dados_clean, avaliar_regras)
+referencias_depois <- validar_referencias(dados_clean)
+dados_clean <- imap(dados_clean, function(df, nome) {
+  ids <- df[[chaves[[nome]]]]
+  repetido <- !eh_ausente(ids) & (duplicated(ids) | duplicated(ids, fromLast = TRUE))
+  pendentes <- c(inconsistencias_depois$linha_origem[inconsistencias_depois$tabela == nome],
+                 referencias_depois$linha_origem[referencias_depois$tabela == nome])
+  df$revisao_pendente <- df$linha_origem %in% pendentes | repetido
+  df
+})
+
+# Auditoria em memória por campo das linhas mantidas, ligada ao CSV bruto.
+auditoria_modificacoes <- imap_dfr(dados_clean, function(df, nome) {
+  raw <- dados_raw[[nome]][df$linha_origem, , drop = FALSE]
+  imap_dfr(raw, function(antes, coluna) {
+    depois <- as.character(df[[janitor::make_clean_names(coluna)]])
+    faltava <- eh_ausente(antes)
+    falta_agora <- eh_ausente(depois)
+    acao <- case_when(
+      !faltava & falta_agora ~ "Valor inválido/ilegível convertido em NA",
+      faltava & !is.na(antes) ~ "Marcador de ausência padronizado para NA",
+      !faltava & !falta_agora & antes != depois ~ "Texto, tipo ou formato padronizado",
+      TRUE ~ NA_character_
     )
-  )
-
-# 5.3 Vendas
-vendas_clean <- vendas_raw %>%
-  clean_names() %>%
-  distinct(id_venda, .keep_all = TRUE) %>% # Elimina vendas duplicadas
-  filter(quantidade > 0) %>%              # Remove transações inconsistentes/negativas
-  mutate(
-    categoria = str_to_title(str_trim(categoria)),
-    produto = str_trim(produto),
-    cor = str_to_title(str_trim(cor)),
-    tamanho = str_to_upper(str_trim(tamanho)),
-    preco_unitario = limpar_moeda(preco_unitario),
-    valor_total_bruto = quantidade * preco_unitario,
-    desconto = ifelse(desconto < 0 | desconto > valor_total_bruto, 0, desconto), # Invalida descontos irreais
-    valor_total_calculado = valor_total_bruto - desconto,
-    
-    data_venda = padronizar_data(data_venda),
-    mes_ano    = floor_date(data_venda, "month"),
-    
-    forma_pagamento = str_to_title(str_trim(forma_pagamento)),
-    forma_pagamento = case_when(
-      str_detect(forma_pagamento, "(?i)crédito|credito") ~ "Cartão de Crédito",
-      str_detect(forma_pagamento, "(?i)débito|debito")   ~ "Cartão de Débito",
-      str_detect(forma_pagamento, "(?i)pix")             ~ "PIX",
-      str_detect(forma_pagamento, "(?i)crediário|crediario") ~ "Crediário",
-      str_detect(forma_pagamento, "(?i)dinheiro")        ~ "Dinheiro",
-      TRUE ~ forma_pagamento
-    ),
-    canal = str_to_title(str_trim(canal)),
-    id_cliente = as.integer(id_cliente)
-  )
-
-# 5.4 Crediário
-crediario_clean <- crediario_raw %>%
-  clean_names() %>%
-  distinct(id_parcela, .keep_all = TRUE) %>%
-  mutate(
-    status = str_to_title(str_trim(status)),
-    status = case_when(
-      status %in% c("Pago", "PAGO", "pago") ~ "Pago",
-      status %in% c("Em Aberto", "Em aberto", "EM ABERTO", "em aberto") ~ "Em Aberto",
-      status %in% c("Atrasado", "ATRASADO", "atrasado") ~ "Atrasado",
-      TRUE ~ status
-    ),
-    data_vencimento = padronizar_data(data_vencimento),
-    data_pagamento  = padronizar_data(data_pagamento),
-    # Ajusta coerência entre status e valores abertos
-    valor_em_aberto = ifelse(status == "Pago", 0, valor_em_aberto)
-  )
-
-# 5.5 Promoções
-promocoes_clean <- promocoes_raw %>%
-  clean_names() %>%
-  distinct(id_promocao, .keep_all = TRUE) %>%
-  mutate(
-    produto = str_trim(produto),
-    categoria = str_to_title(str_trim(categoria)),
-    tipo_desconto = str_to_title(str_trim(tipo_desconto)),
-    data_inicio = padronizar_data(data_inicio),
-    data_fim = padronizar_data(data_fim),
-    lift_vendas_pct = round(((vendas_durante - vendas_antes) / vendas_antes) * 100, 2)
-  )
-
-# 5.6 Vendedores
-vendedores_clean <- vendedores_raw %>%
-  clean_names() %>%
-  distinct(id_vendedor, .keep_all = TRUE) %>%
-  mutate(
-    nome = str_trim(str_remove_all(nome, "(?i)^(Sr\\.|Sra\\.)\\s*")), # Remove títulos para padronizar nomes
-    cidade_loja = str_trim(cidade_loja),
-    data_contratacao = padronizar_data(data_contratacao)
-  )
-
+    tibble(tabela = nome, linha_origem = df$linha_origem, coluna = coluna,
+           antes = antes, depois = depois, acao = acao) |> filter(!is.na(acao))
+  })
+})
+mostrar(auditoria_modificacoes |> count(tabela, acao, name = "campos_modificados"))
+mostrar(auditoria_modificacoes |> group_by(tabela, acao) |> slice_head(n = 3) |> ungroup())
 ```
 
-```{r}
-write.csv(clientes_clean,   "./clean_data/clientes_clean.csv",   row.names = FALSE)
-write.csv(estoque_clean,    "./clean_data/estoque_clean.csv",    row.names = FALSE)
-write.csv(vendas_clean,     "./clean_data/vendas_clean.csv",     row.names = FALSE)
-write.csv(crediario_clean,  "./clean_data/crediario_clean.csv",  row.names = FALSE)
-write.csv(promocoes_clean,  "./clean_data/promocoes_clean.csv",  row.names = FALSE)
-write.csv(vendedores_clean, "./clean_data/vendedores_clean.csv", row.names = FALSE)
+`linha_origem` localiza o registro no CSV bruto; `outlier_iqr_origem` e
+`outlier_dp_origem` guardam os alertas anteriores à limpeza, inclusive quando
+um campo precisou virar `NA`. `revisao_pendente` marca inconsistências,
+referências sem solução ou IDs ainda repetidos. Essas colunas de auditoria não
+substituem os campos originais. Os detalhes de cada alteração ficam em
+`auditoria_modificacoes`, sem exportar arquivos adicionais de auditoria.
+
+# Exportação para `clean_data/`
+
+```{r exportacao}
+dir.create(pasta_clean, showWarnings = FALSE, recursive = TRUE)
+arquivos_clean <- set_names(file.path(pasta_clean, paste0(tabelas, "_clean.csv")), tabelas)
+iwalk(dados_clean, function(df, nome) write_csv(df, arquivos_clean[[nome]], na = "NA"))
+mostrar(tibble(tabela = tabelas, arquivo = basename(arquivos_clean),
+               registros = map_int(dados_clean, nrow)))
 ```
 
-```{r}
-tb_canal <- vendas_clean %>%
-  group_by(canal) %>%
-  summarise(
-    Transacoes = n(),
-    Pecas_Vendidas = sum(quantidade, na.rm = TRUE),
-    Faturamento_R = sum(valor_total_calculado, na.rm = TRUE),
-    Ticket_Medio_R = mean(valor_total_calculado, na.rm = TRUE)
-  )
+CSV não armazena metadados de tipo. A exportação usa UTF-8, números com ponto
+decimal, datas ISO (`AAAA-MM-DD`), lógicos `TRUE/FALSE`, IDs textuais e `NA`
+para ausências. A validação a seguir relê cada arquivo com os tipos explícitos
+da tabela tratada, inclusive para arquivos vazios ou colunas inteiramente `NA`.
 
-print("--- VISÃO POR CANAL DE VENDA ---")
-print(knitr::kable(tb_canal, digits = 2))
+# Comparação dos dados antes e depois
 
-# Tabela 2: Resumo de Desempenho por Categoria de Produto
-tb_categoria <- vendas_clean %>%
-  group_by(categoria) %>%
-  summarise(
-    Transacoes = n(),
-    Quantidade = sum(quantidade, na.rm = TRUE),
-    Faturamento_R = sum(valor_total_calculado, na.rm = TRUE),
-    Desconto_Total_R = sum(desconto, na.rm = TRUE),
-    Preco_Medio_R = mean(preco_unitario, na.rm = TRUE)
-  ) %>%
-  arrange(desc(Faturamento_R))
+```{r comparacao}
+# Compare apenas colunas originais: flags e derivados não entram na completude.
+comparacao <- imap_dfr(dados_clean, function(df, nome) {
+  raw <- dados_raw[[nome]]
+  campos <- janitor::make_clean_names(names(raw))
+  antes <- inconsistencias_antes |> filter(tabela == nome)
+  depois <- inconsistencias_depois |> filter(tabela == nome)
+  tibble(tabela = nome, linhas_antes = nrow(raw), linhas_depois = nrow(df),
+         removidas = nrow(raw) - nrow(df),
+         ausentes_antes = sum(vapply(raw, function(x) sum(eh_ausente(x)), integer(1))),
+         ausentes_depois = sum(vapply(df[campos], function(x) sum(eh_ausente(x)), integer(1))),
+         duplicatas_antes = sum(duplicated(raw)),
+         duplicatas_removidas = sum(duplicated(raw)),
+         duplicatas_depois = sum(duplicated(df[campos])),
+         campos_invalidos_para_na = sum(auditoria_modificacoes$tabela == nome &
+           auditoria_modificacoes$acao == "Valor inválido/ilegível convertido em NA"),
+         regras_antes = nrow(antes), regras_depois = nrow(depois),
+         registros_para_revisao = sum(df$revisao_pendente))
+})
+mostrar(comparacao |>
+  select(tabela, linhas_antes, linhas_depois, removidas, duplicatas_antes,
+         duplicatas_removidas, duplicatas_depois))
+mostrar(comparacao |>
+  select(tabela, ausentes_antes, ausentes_depois, campos_invalidos_para_na,
+         regras_antes, regras_depois, registros_para_revisao))
 
-print("--- PERFORMANCE POR CATEGORIA ---")
-print(knitr::kable(tb_categoria, digits = 2))
+# Quantidades por coluna evidenciam ausências esperadas e novas invalidações.
+comparacao_ausentes <- imap_dfr(dados_clean, function(df, nome) {
+  imap_dfr(dados_raw[[nome]], function(x, coluna) {
+    tibble(tabela = nome, coluna = coluna, antes = sum(eh_ausente(x)),
+           depois = sum(eh_ausente(df[[janitor::make_clean_names(coluna)]])))
+  })
+})
+mostrar(comparacao_ausentes)
+
+comparacao_regras <- full_join(
+  inconsistencias_antes |> count(tabela, coluna, regra, acao, name = "antes"),
+  inconsistencias_depois |> count(tabela, coluna, regra, acao, name = "depois"),
+  by = c("tabela", "coluna", "regra", "acao")
+) |> mutate(across(c(antes, depois), ~replace_na(.x, 0L)))
+mostrar(comparacao_regras)
+mostrar(inconsistencias_depois |> group_by(tabela, regra) |> slice_head(n = 3) |> ungroup())
+mostrar(referencias_depois |> count(tabela, coluna, destino, name = "pendencias_preservadas"))
+
+# IDs que continuam repetidos são exibidos, nunca eliminados automaticamente.
+ids_pendentes <- imap_dfr(dados_clean, function(df, nome) {
+  df |> filter(!eh_ausente(.data[[chaves[[nome]]]])) |>
+    count(identificador = .data[[chaves[[nome]]]], name = "registros") |>
+    filter(registros > 1) |> mutate(tabela = nome, .before = 1)
+})
+mostrar(ids_pendentes)
 ```
 
-```{r}
-tb_crediario <- crediario_clean %>%
-  group_by(status) %>%
-  summarise(
-    Qtd_Parcelas = n(),
-    Valor_Total_R = sum(valor_parcela, na.rm = TRUE),
-    Valor_Em_Aberto_R = sum(valor_em_aberto, na.rm = TRUE),
-    Dias_Atraso_Medio = mean(dias_atraso, na.rm = TRUE)
-  )
+O total de regras conta ocorrências, e uma célula pode violar mais de uma
+regra; não representa número de linhas. `campos_invalidos_para_na` conta as
+células distintas das linhas mantidas. Uma redução de ocorrências também pode
+decorrer de duplicatas removidas: não deve ser interpretada como quantidade de
+valores corrigidos. Linhas originalmente diferentes podem tornar-se iguais
+após padronização; elas são conservadas, pois essa igualdade posterior não
+comprova duplicidade na origem.
 
-print("--- SITUAÇÃO DO CREDIÁRIO ---")
-print(knitr::kable(tb_crediario, digits = 2))
+```{r destino-outliers}
+# Acompanha cada valor extremo pela posição de origem, sem depender de IDs únicos.
+destino_outliers <- outliers_antes |>
+  mutate(tratamento = pmap_chr(list(tabela, linha_origem, variavel), function(nome, linha, coluna) {
+    df <- dados_clean[[nome]]
+    posicao <- match(linha, df$linha_origem)
+    if (is.na(posicao)) return("Linha removida por duplicação completa")
+    if (is.na(df[[coluna]][posicao])) return("Campo inválido convertido em NA por regra de domínio")
+    "Valor preservado; sinal estatístico para avaliação"
+  }))
+mostrar(destino_outliers |> count(tabela, variavel, tratamento, name = "valores_sinalizados"))
+mostrar(destino_outliers |> group_by(tabela, tratamento) |> slice_head(n = 3) |> ungroup())
+
+# Mantém os limites anteriores fixos: recalcular os limites poderia mascarar
+# mudanças da distribuição e criar uma falsa aparência de melhora.
+outliers_depois <- detectar_outliers(dados_clean, estatisticas_antes)
+comparacao_outliers <- full_join(
+  outliers_antes |> group_by(tabela, variavel) |>
+    summarise(iqr_antes = sum(outlier_iqr), dp_antes = sum(outlier_dp), .groups = "drop"),
+  outliers_depois |> group_by(tabela, variavel) |>
+    summarise(iqr_depois = sum(outlier_iqr), dp_depois = sum(outlier_dp), .groups = "drop"),
+  by = c("tabela", "variavel")
+) |> mutate(across(where(is.numeric), ~replace_na(.x, 0)))
+mostrar(comparacao_outliers)
+
+estatisticas_depois <- imap_dfr(dados_clean, function(df, nome) {
+  map_dfr(campos_numericos[[nome]], function(coluna) {
+    resumir_numero(df[[coluna]]) |> mutate(tabela = nome, variavel = coluna, .before = 1)
+  })
+})
+comparacao_estatisticas <- bind_rows(
+  estatisticas_antes |> mutate(etapa = "Antes"),
+  estatisticas_depois |> mutate(etapa = "Depois")
+) |> select(tabela, variavel, etapa, n_validos, media, mediana, desvio_padrao, q1, q3, iqr) |>
+  arrange(tabela, variavel, etapa)
+mostrar(comparacao_estatisticas)
 ```
 
-```{r}
-g1 <- vendas_clean %>% 
-  group_by(mes_ano) %>% 
-  summarise(Faturamento = sum(valor_total_calculado, na.rm = TRUE)) %>% 
-  ggplot(aes(x = mes_ano, y = Faturamento)) +
-  geom_line(color = "#2c3e50", size = 1.2) +
-  geom_point(color = "#e74c3c", size = 3) +
-  scale_y_continuous(labels = dollar_format(prefix = "R$ ", big.mark = ".", decimal.mark = ",")) +
-  scale_x_date(date_labels = "%b/%Y", date_breaks = "1 month") +
-  theme_minimal() +
-  labs(title = "Evolução do Faturamento Mensal", x = "Mês", y = "Faturamento Total")
+```{r verificacoes-finais}
+stopifnot(
+  all(comparacao$removidas == comparacao$duplicatas_removidas),
+  all(comparacao$linhas_antes - comparacao$linhas_depois == comparacao$duplicatas_antes),
+  !any(inconsistencias_depois$acao == "Substituir por NA"),
+  all(file.exists(arquivos_clean))
+)
 
-print(g1)
+verificacao_csv <- imap_dfr(dados_clean, function(df, nome) {
+  coletores <- map(df, function(x) {
+    if (inherits(x, "Date")) return(col_date())
+    if (is.integer(x)) return(col_integer())
+    if (is.double(x)) return(col_double())
+    if (is.logical(x)) return(col_logical())
+    col_character()
+  })
+  relido <- read_csv(arquivos_clean[[nome]], col_types = do.call(cols, coletores),
+                     na = "NA", trim_ws = FALSE, show_col_types = FALSE)
+  valido <- nrow(problems(relido)) == 0 && identical(names(df), names(relido)) &&
+    isTRUE(all.equal(df, relido, check.attributes = FALSE, tolerance = 1e-8))
+  if (!valido) stop("Falha na validação de exportação: ", nome)
+  tibble(tabela = nome, linhas = nrow(relido), colunas = ncol(relido), csv_validado = valido)
+})
+mostrar(verificacao_csv)
 ```
 
-
-```{r}
-g2 <- promocoes_clean %>%
-  pivot_longer(cols = c(vendas_antes, vendas_durante), names_to = "Periodo", values_to = "Volume") %>%
-  mutate(Periodo = ifelse(Periodo == "vendas_antes", "Antes da Promoção", "Durante a Promoção")) %>%
-  ggplot(aes(x = reorder(produto, Volume), y = Volume, fill = Periodo)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  coord_flip() +
-  theme_minimal() +
-  scale_fill_manual(values = c("#95a5a6", "#2ecc71")) +
-  labs(title = "Efeito Promocional por Produto", x = "Produto", y = "Unidades Vendidas", fill = "Período")
-
-print(g2)
-```
-
-
-
-
-
-
+Os resultados devem ser lidos junto às pendências: os arquivos tratados
+preservam observações extremas legítimas, variantes de um mesmo ID e valores
+que dependem de conciliação. A limpeza torna os erros explícitos e rastreáveis;
+não declara esses casos resolvidos sem evidência na origem.
