@@ -693,6 +693,141 @@ referências sem solução ou IDs ainda repetidos. Essas colunas de auditoria n�
 substituem os campos originais. Os detalhes de cada alteração ficam em
 `auditoria_modificacoes`, sem exportar arquivos adicionais de auditoria.
 
+# Análise exploratória consolidada dos dados tratados
+
+Esta etapa usa `dados_clean`, após deduplicação, conversão e aplicação das
+regras de domínio. Os agrupamentos contam registros, pois IDs conflitantes
+foram preservados e não garantem transações únicas. O faturamento é calculado
+por quantidade × preço − desconto; o total informado continua nos CSVs para
+conciliação. Valores ausentes não são considerados zero. As contagens válidas
+e as pendências acompanham os indicadores para explicitar sua cobertura.
+
+```{r agrupamentos-tratados}
+soma_valida <- function(x) if (any(is.finite(x))) sum(x[is.finite(x)]) else NA_real_
+media_valida <- function(x) if (any(is.finite(x))) mean(x[is.finite(x)]) else NA_real_
+mediana_valida <- function(x) if (any(is.finite(x))) median(x[is.finite(x)]) else NA_real_
+formatar_valor <- function(x) {
+  ifelse(is.finite(x), format(round(x, 2), big.mark = ".", decimal.mark = ",", nsmall = 2),
+         "indisponível")
+}
+resumir_vendas <- function(df, grupo) {
+  df |> group_by(across(all_of(grupo))) |>
+    summarise(registros = n(), valores_validos = sum(is.finite(valor_total_calculado)),
+              pendentes = sum(revisao_pendente), pecas = soma_valida(quantidade),
+              faturamento = soma_valida(valor_total_calculado),
+              valor_medio_registro = media_valida(valor_total_calculado),
+              valor_mediano_registro = mediana_valida(valor_total_calculado), .groups = "drop")
+}
+vendas_canal <- resumir_vendas(dados_clean$vendas, "canal") |>
+  arrange(desc(faturamento))
+vendas_categoria <- resumir_vendas(dados_clean$vendas, "categoria") |>
+  arrange(desc(faturamento))
+mostrar(vendas_canal)
+mostrar(vendas_categoria)
+
+crediario_status <- dados_clean$crediario |> group_by(status) |>
+  summarise(parcelas = n(), saldos_validos = sum(is.finite(valor_em_aberto)),
+            saldo_em_aberto = soma_valida(valor_em_aberto),
+            atraso_medio_dias = media_valida(dias_atraso),
+            pendentes = sum(revisao_pendente), .groups = "drop")
+mostrar(crediario_status)
+
+promocoes_resultados <- dados_clean$promocoes |>
+  mutate(variacao_pct = if_else(vendas_antes > 0,
+    100 * (vendas_durante - vendas_antes) / vendas_antes, NA_real_)) |>
+  select(id_promocao, produto, vendas_antes, vendas_durante, variacao_pct, revisao_pendente)
+mostrar(promocoes_resultados)
+```
+
+Os grupos `NA` permanecem visíveis, evitando ocultar registros sem categoria
+ou canal. Saldos e atrasos são os valores registrados, sem recalcular a situação
+da parcela pela data de execução. A variação promocional fica indefinida quando
+a base anterior é zero ou ausente. Os períodos antes e durante podem ter
+durações diferentes: essa comparação descreve volumes, sem demonstrar efeito
+causal nem aumento de vendas por dia.
+
+```{r graficos-tratados}
+if (any(is.finite(vendas_categoria$faturamento))) {
+  print(vendas_categoria |> filter(is.finite(faturamento)) |>
+    ggplot(aes(x = reorder(replace_na(categoria, "<ausente>"), faturamento), y = faturamento)) +
+    geom_col(fill = "steelblue") + coord_flip() +
+    labs(title = "Faturamento calculado por categoria após o tratamento",
+         x = "Categoria", y = "Faturamento (R$)"))
+}
+vendas_mensais <- dados_clean$vendas |>
+  filter(!is.na(data_venda)) |> mutate(mes = floor_date(data_venda, "month")) |>
+  resumir_vendas("mes") |> arrange(mes)
+mostrar(vendas_mensais)
+if (any(is.finite(vendas_mensais$faturamento))) {
+  # Meses sem observações ficam NA; não se presume ausência de vendas.
+  serie_mensal <- vendas_mensais |>
+    complete(mes = seq.Date(min(mes), max(mes), by = "month"))
+  print(ggplot(serie_mensal, aes(mes, faturamento)) +
+    geom_line(na.rm = TRUE, color = "steelblue") + geom_point(na.rm = TRUE) +
+    scale_x_date(date_labels = "%m/%Y") +
+    labs(title = "Evolução mensal do faturamento calculado",
+         x = "Mês", y = "Faturamento (R$)",
+         caption = "Meses de início e fim podem estar incompletos; lacunas não representam zero."))
+}
+```
+
+```{r relacoes-tratadas}
+# Correlação usa pares completos, sem imputar ausências nem usar IDs como medidas.
+relacoes_tratadas <- imap_dfr(pares, function(par, nome) {
+  df <- dados_clean[[nome]]
+  # Para vendas, usa o total derivado dos componentes tratados.
+  if (nome == "vendas") par[2] <- "valor_total_calculado"
+  x <- df[[par[1]]]
+  y <- df[[par[2]]]
+  completos <- is.finite(x) & is.finite(y)
+  n <- sum(completos)
+  estimavel <- n >= 3 && sd(x[completos]) > 0 && sd(y[completos]) > 0
+  tibble(tabela = nome, variavel_x = par[1], variavel_y = par[2], pares_validos = n,
+         spearman = if (estimavel) cor(x[completos], y[completos], method = "spearman") else NA_real_)
+})
+mostrar(relacoes_tratadas)
+```
+
+Spearman descreve a associação monotônica entre os pares tratados, com pelo
+menos três pares e variação em ambas as medidas. Não demonstra causalidade;
+em vendas, a quantidade participa da própria fórmula do total calculado.
+
+```{r interpretacao-consolidada}
+cat("Na base tratada,", nrow(dados_clean$vendas), "registros de vendas permanecem, dos quais",
+    sum(is.finite(dados_clean$vendas$valor_total_calculado)),
+    "têm componentes suficientes para calcular o total. O faturamento calculável soma R$",
+    formatar_valor(soma_valida(dados_clean$vendas$valor_total_calculado)), ".\n\n")
+lideres <- vendas_categoria |> filter(is.finite(faturamento))
+if (nrow(lideres)) {
+  lideres <- lideres |> filter(faturamento == max(faturamento))
+  cat("A maior soma por categoria é R$", formatar_valor(lideres$faturamento[1]),
+      ", observada em", paste(replace_na(lideres$categoria, "<ausente>"), collapse = ", "),
+      ". Esse resultado descreve participação no faturamento disponível; não mede margem de lucro.\n\n")
+}
+meses_validos <- vendas_mensais |> filter(is.finite(faturamento))
+if (nrow(meses_validos) >= 2) {
+  inicial <- meses_validos |> slice_head(n = 1)
+  final <- meses_validos |> slice_tail(n = 1)
+  cat("O primeiro mês observado (", format(inicial$mes, "%m/%Y"), ") soma R$",
+      formatar_valor(inicial$faturamento), "e o último (", format(final$mes, "%m/%Y"),
+      ") soma R$", formatar_valor(final$faturamento),
+      ". A diferença não estabelece tendência sustentada: cobertura, meses parciais e pendências podem afetar a comparação.\n\n")
+} else {
+  cat("A cobertura mensal é insuficiente para comparar períodos.\n\n")
+}
+cat("Vendas sem data válida, excluídas apenas da série temporal:",
+    sum(is.na(dados_clean$vendas$data_venda)), ".\n\n")
+cat("Registros com revisão pendente nas seis tabelas:",
+    sum(map_int(dados_clean, ~sum(.x$revisao_pendente))),
+    ". Os indicadores incluem essas linhas preservadas e devem ser interpretados junto às pendências de qualidade.\n\n")
+walk(seq_len(nrow(relacoes_tratadas)), function(i) {
+  r <- relacoes_tratadas[i, ]
+  cat("Em", r$tabela, ", a associação de Spearman entre", r$variavel_x, "e", r$variavel_y,
+      "é", formatar_valor(r$spearman), "com", r$pares_validos,
+      "pares válidos. Valores próximos de +1/-1 indicam associação monotônica mais forte; próximos de zero indicam associação monotônica fraca.\n\n")
+})
+```
+
 # Exportação para `clean_data/`
 
 ```{r exportacao}
