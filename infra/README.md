@@ -541,3 +541,8 @@ essa inspeção não equivale a um teste de instalação do zero em outro comput
 - [Visão geral e execução dos pipelines](../README.md)
 - [Monitoramento: arquitetura, métricas, provisioning e testes](../monitoring/README.md)
 - [Código e Docker Compose do simulador](../simulator/docker-compose.yml)
+
+
+```
+ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/setup.yml
+```

@@ -8,9 +8,28 @@ Pandoc e os pacotes abaixo.
 install.packages(c("rmarkdown", "knitr", "tidyverse", "lubridate", "janitor", "httr2", "jsonlite"))
 ```
 
-Execute da raiz do repositório com o IP da VM geradora exibido pelo Ansible.
-Para um simulador executado na própria máquina, o endereço padrão é
-`http://127.0.0.1:5000/api/tabelas`.
+O relatório usa o `ansible_host` do grupo `[simulator]` em
+`infra/ansible/inventory.ini`. Se o inventário estiver ausente, usa
+`http://127.0.0.1:5000/api/tabelas`. Ao rodar as células no RStudio, o
+relatório localiza o inventário a partir do `etl.Rmd` aberto no editor.
+Em outras sessões interativas, use a raiz do repositório ou a pasta
+`pipeline/` como diretório de trabalho do R.
+
+Para informar outro endereço ao rodar as células, defina a variável no console
+do R antes da execução.
+
+```r
+Sys.setenv(SIMULATOR_API_URL = "http://<IP_SIMULATOR>:5000/api/tabelas")
+```
+
+Para renderizar com o endereço do inventário, execute da raiz do repositório.
+
+```bash
+Rscript -e 'rmarkdown::render("pipeline/etl.Rmd")'
+```
+
+Para renderizar com outro endereço, use `SIMULATOR_API_URL`. Por exemplo, se o
+simulador estiver rodando na própria máquina, use `127.0.0.1` no comando abaixo.
 
 ```bash
 SIMULATOR_API_URL='http://<IP_SIMULATOR>:5000/api/tabelas' \
@@ -24,7 +43,8 @@ SIMULATOR_API_URL='http://<IP_SIMULATOR>:5000/api/tabelas' \
 
 A publicação usa os diretórios existentes do datalake e substitui os CSVs
 correspondentes após a validação. Os arquivos também ficam em `pipeline/`.
-O endereço da API pode ser passado pelo parâmetro `url_api` na renderização.
+Na renderização, um `url_api` preenchido tem precedência sobre
+`SIMULATOR_API_URL` e o inventário.
 
 ## Reprocessar uma coleta
 

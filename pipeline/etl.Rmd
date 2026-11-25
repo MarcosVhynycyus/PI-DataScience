@@ -7,7 +7,7 @@ output:
     number_sections: true
 params:
   atualizar_api: true
-  url_api: !r Sys.getenv("SIMULATOR_API_URL", "http://127.0.0.1:5000/api/tabelas")
+  url_api: ""
 ---
 
 Este relatório segue **API → raw_data/ → diagnóstico → gráficos → interpretação
@@ -16,8 +16,11 @@ estatística descritiva e gráficos exploratórios.
 
 Os arquivos são exportados em `pipeline/` e publicados nas pastas `raw_data/`
 e `clean_data/` de `big-data/datalake/` após a validação. Por padrão, cada
-execução consulta os seis endpoints. Defina `SIMULATOR_API_URL` ou o parâmetro
-`url_api` para apontar para a VM do simulador. Para repetir a análise de uma
+execução consulta os seis endpoints usando o `ansible_host` do grupo
+`[simulator]` em `infra/ansible/inventory.ini`. Sem o inventário, o endereço
+padrão é `http://127.0.0.1:5000/api/tabelas`. Use `SIMULATOR_API_URL` para
+informar outro endereço ao rodar as células ou renderizar. Na renderização,
+`url_api` tem precedência sobre a variável de ambiente. Para repetir a análise de uma
 extração já realizada, use o parâmetro `atualizar_api = FALSE` na renderização.
 Esse modo exige os seis CSVs em `raw_data/`; falhas da API nunca acionam uma
 troca silenciosa por dados antigos. Os CSVs tratados mantêm os nomes
@@ -43,18 +46,30 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE,
                       error = FALSE, cache = FALSE, results = "asis",
                       fig.width = 10, fig.height = 6)
 theme_set(theme_minimal(base_size = 11))
-if (!exists("params")) {
-  params <- list(atualizar_api = TRUE,
-                 url_api = Sys.getenv("SIMULATOR_API_URL", "http://127.0.0.1:5000/api/tabelas"))
-}
 
 arquivo_rmd <- knitr::current_input(dir = TRUE)
+# O rmarkdown injeta params na renderização. Ao rodar células no console, use a configuração atual.
+parametros_etl <- if (!is.null(arquivo_rmd) && exists("params", inherits = FALSE)) {
+  params
+} else {
+  list(atualizar_api = TRUE, url_api = "")
+}
+if (is.null(arquivo_rmd) && requireNamespace("rstudioapi", quietly = TRUE) &&
+    rstudioapi::isAvailable()) {
+  arquivo_editor <- rstudioapi::getSourceEditorContext()$path
+  if (isTRUE(basename(arquivo_editor) == "etl.Rmd") && file.exists(arquivo_editor)) {
+    arquivo_rmd <- arquivo_editor
+  }
+}
 pasta_pipeline <- if (!is.null(arquivo_rmd)) {
   dirname(normalizePath(arquivo_rmd, mustWork = TRUE))
 } else if (file.exists("pipeline/etl.Rmd")) {
   normalizePath("pipeline")
+} else if (basename(getwd()) == "pipeline" && file.exists("etl.Rmd")) {
+  getwd()
 } else {
-  getwd() # Execução interativa a partir da pasta pipeline.
+  stop("Para rodar as células, defina o diretório de trabalho do R como a raiz do projeto ou a pasta pipeline.",
+       call. = FALSE)
 }
 pasta_raw <- file.path(pasta_pipeline, "raw_data")
 pasta_clean <- file.path(pasta_pipeline, "clean_data")
@@ -188,6 +203,31 @@ texto como `"NaN"` ou `"Produto NaN"` continua intacto nesta etapa.
 ```{r extracao}
 arquivos_raw <- set_names(file.path(pasta_raw, paste0(tabelas, ".csv")), tabelas)
 
+resolver_url_api <- function(url) {
+  if (isTRUE(nzchar(url, keepNA = TRUE))) return(url)
+  url_ambiente <- Sys.getenv("SIMULATOR_API_URL")
+  if (nzchar(url_ambiente)) return(url_ambiente)
+
+  inventario <- file.path(dirname(pasta_pipeline), "infra", "ansible", "inventory.ini")
+  if (!file.exists(inventario)) return("http://127.0.0.1:5000/api/tabelas")
+
+  linhas <- trimws(sub("[[:space:]]*[#;].*$", "", readLines(inventario, warn = FALSE)))
+  cabecalhos <- startsWith(linhas, "[")
+  grupos <- cumsum(cabecalhos)
+  hosts <- linhas[!cabecalhos & grupos %in% grupos[linhas == "[simulator]"]]
+  enderecos <- str_match(hosts, "\\s+ansible_host=['\"]?([^\\s'\"]+)")[, 2]
+  enderecos <- unique(enderecos[!is.na(enderecos)])
+  if (length(enderecos) != 1L) {
+    stop("Informe um único ansible_host no grupo [simulator] de ", inventario, ".", call. = FALSE)
+  }
+
+  endereco <- enderecos[[1]]
+  if (grepl(":", endereco, fixed = TRUE) && !startsWith(endereco, "[")) {
+    endereco <- paste0("[", endereco, "]")
+  }
+  paste0("http://", endereco, ":5000/api/tabelas")
+}
+
 extrair_tabela <- function(url, nome) {
   tryCatch({
     resposta <- request(url) |> req_timeout(30) |> req_perform()
@@ -208,13 +248,18 @@ extrair_tabela <- function(url, nome) {
     faltantes <- setdiff(colunas_esperadas[[nome]], names(df))
     if (length(faltantes)) stop("Colunas ausentes: ", paste(faltantes, collapse = ", "))
     as_tibble(df, .name_repair = "check_unique")
+  }, httr2_failure = function(e) {
+    stop(sprintf(paste0("Falha na conexão com a API ao coletar '%s' (%s). ",
+                        "Verifique se o simulador está ativo e se o endereço está correto. ",
+                        "Para usar outro endereço, configure SIMULATOR_API_URL. %s"),
+                 nome, url, conditionMessage(e)), call. = FALSE)
   }, error = function(e) {
     stop(sprintf("Falha na coleta de '%s' (%s): %s", nome, url, conditionMessage(e)), call. = FALSE)
   })
 }
 
-if (isTRUE(params$atualizar_api)) {
-  url_base <- sub("/+$", "", params$url_api)
+if (isTRUE(parametros_etl$atualizar_api)) {
+  url_base <- sub("/+$", "", resolver_url_api(parametros_etl$url_api))
   endpoints <- set_names(paste0(url_base, "/", tabelas), tabelas)
   # Valida as seis respostas antes de substituir qualquer CSV de uma coleta anterior.
   dados_api <- imap(endpoints, extrair_tabela)
@@ -227,7 +272,7 @@ if (isTRUE(params$atualizar_api)) {
 }
 mostrar(tibble(tabela = tabelas, arquivo = basename(arquivos_raw),
                modificado_em = as.character(file.info(arquivos_raw)$mtime),
-               origem = if (isTRUE(params$atualizar_api)) "API nesta execução" else "Extração anterior"))
+               origem = if (isTRUE(parametros_etl$atualizar_api)) "API nesta execução" else "Extração anterior"))
 ```
 
 # Leitura dos dados brutos

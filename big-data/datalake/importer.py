@@ -2,12 +2,12 @@ import os
 import requests as rq
 import pandas as pd
 
-vendas_url = "http://192.168.122.92:5000/api/tabelas/vendas"
-vendedores_url = "http://192.168.122.92:5000/api/tabelas/vendedores"
-clientes_url = "http://192.168.122.92:5000/api/tabelas/clientes"
-crediario_url = "http://192.168.122.92:5000/api/tabelas/crediario"
-promocoes_url = "http://192.168.122.92:5000/api/tabelas/promocoes"
-estoque_url = "http://192.168.122.92:5000/api/tabelas/estoque"
+vendas_url = "http://192.168.122.61:5000/api/tabelas/vendas"
+vendedores_url = "http://192.168.122.61:5000/api/tabelas/vendedores"
+clientes_url = "http://192.168.122.61:5000/api/tabelas/clientes"
+crediario_url = "http://192.168.122.61:5000/api/tabelas/crediario"
+promocoes_url = "http://192.168.122.61:5000/api/tabelas/promocoes"
+estoque_url = "http://192.168.122.61:5000/api/tabelas/estoque"
 
 output_dir = "./big-data/datalake/raw_data"
 
