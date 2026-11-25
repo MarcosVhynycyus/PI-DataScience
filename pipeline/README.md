@@ -1,48 +1,40 @@
-# Módulo de Pipelines de Dados (ETL)
+# Pipeline ETL em R Markdown
 
-Este diretório contém os scripts do pipeline de **Extração, Transformação e Carga (ETL)**, responsáveis por converter os dados brutos armazenados no Data Lake em dados consolidados no Data Warehouse.
+O relatório `etl.Rmd` coleta as seis tabelas da API do simulador, diagnostica
+a qualidade dos dados, aplica a limpeza e valida os CSVs tratados. Requer R,
+Pandoc e os pacotes abaixo.
 
----
-
-## 🔄 Estágios do Pipeline de ETL
-
-O pipeline de tratamento é executado pelo Apache Spark e segue três etapas principais:
-
-```text
-+-------------------+     +-------------------------+     +-------------------+
-|  Dados Brutos     | --> |     Tratamento / ETL    | --> | Apache Spark / DW |
-| (Data Lake / HDFS)|     | - Remoção Duplicidades  |     | (Dados Tratados)  |
-|                   |     | - Padronização          |     |                   |
-|                   |     | - Tratamento Ausentes   |     |                   |
-+-------------------+     +-------------------------+     +-------------------+
+```r
+install.packages(c("rmarkdown", "knitr", "tidyverse", "lubridate", "janitor", "httr2", "jsonlite"))
 ```
 
-### 1. Remoção de Duplicidades
-- Identificação de transações ou cliques repetidos por meio de IDs únicos e janelas de tempo (`dropDuplicates()`).
-
-### 2. Padronização dos Dados
-- Unificação de formatos de data (`YYYY-MM-DD HH:mm:ss`).
-- Normalização de strings e categorias de produtos.
-- Conversão de moedas e unidades de medida.
-
-### 3. Tratamento de Dados Ausentes
-- Imputação de valores nulos em campos secundários.
-- Descarte estruturado de registros corrompidos com registro de log de auditoria.
-
----
-
-## ⚡ Modos de Execução
-
-### Pipeline Batch (`etl_batch.py`)
-Processa o histórico completo de transações e avaliações de clientes para gerar matrizes de filtragem colaborativa.
+Execute da raiz do repositório com o IP da VM geradora exibido pelo Ansible.
+Para um simulador executado na própria máquina, o endereço padrão é
+`http://127.0.0.1:5000/api/tabelas`.
 
 ```bash
-spark-submit --master local[*] etl_batch.py
+SIMULATOR_API_URL='http://<IP_SIMULATOR>:5000/api/tabelas' \
+  Rscript -e 'rmarkdown::render("pipeline/etl.Rmd")'
 ```
 
-### Pipeline Streaming (`etl_streaming.py`)
-Captura dados de navegação e itens adicionados ao carrinho em tempo real para atualizar as recomendações da sessão do usuário.
+| Dados | Arquivo local | Arquivo usado pelos notebooks |
+| --- | --- | --- |
+| Brutos | `pipeline/raw_data/<tabela>.csv` | `big-data/datalake/raw_data/<tabela>.csv` |
+| Tratados | `pipeline/clean_data/<tabela>_clean.csv` | `big-data/datalake/clean_data/<tabela>.csv` |
+
+A publicação usa os diretórios existentes do datalake e substitui os CSVs
+correspondentes após a validação. Os arquivos também ficam em `pipeline/`.
+O endereço da API pode ser passado pelo parâmetro `url_api` na renderização.
+
+## Reprocessar uma coleta
+
+Com os seis CSVs brutos de uma extração anterior em `pipeline/raw_data/`,
+execute em modo offline. O relatório publica os dados brutos dessa coleta e
+os dados tratados da execução atual.
 
 ```bash
-spark-submit --master local[*] etl_streaming.py
+Rscript -e 'rmarkdown::render("pipeline/etl.Rmd", params = list(atualizar_api = FALSE))'
 ```
+
+O script `etl.r` usa os arquivos em `pipeline/data/` e grava o tratamento em
+`pipeline/clean_data/`.

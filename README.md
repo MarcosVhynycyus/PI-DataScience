@@ -9,13 +9,13 @@ O repositório reúne infraestrutura de laboratório, geração de dados sintét
 | Componente | Implementação presente no repositório |
 | --- | --- |
 | Infraestrutura | OpenTofu com QEMU/KVM, libvirt e cloud-init para duas VMs Ubuntu Server 24.04; geração do inventário Ansible. |
-| Automação | Ansible para Docker, Grafana, Node Exporter, Prometheus e provisioning de dashboards; implantação das métricas da aplicação opcional. |
+| Automação | Um playbook Ansible atualiza pacotes, implanta o simulador com Docker Compose e configura o monitoramento. |
 | Simulador | Geração contínua de dados sintéticos com inconsistências intencionais para exercícios de qualidade de dados. |
 | Serviços de dados | PostgreSQL 15, API Flask com Gunicorn e Adminer, definidos no Docker Compose do simulador. |
-| Data Lake local | Coleta da API para CSV e limpeza com Python, pandas e NumPy. |
-| ETL em R | Script e documento R Markdown para diagnóstico, limpeza e transformação de CSVs. |
+| Data Lake local | CSVs brutos e tratados publicados pelo R Markdown em `big-data/datalake/`. As rotinas em Python também podem gerar esses CSVs. |
+| ETL em R | O R Markdown coleta a API, faz diagnóstico, limpeza e validação e publica os CSVs para os notebooks. |
 | Data Warehouse | Arquivo SQLite e script para exportação das tabelas em CSV. |
-| Monitoramento | Configuração Ansible de Prometheus + Node Exporter e dashboard automático no Grafana, com instrumentação opcional do gerador. Alertas ainda não configurados. |
+| Monitoramento | Prometheus, Node Exporter e dashboard automático no Grafana, com métricas do gerador habilitadas por padrão. Alertas ainda não configurados. |
 
 HDFS, processamento distribuído com Spark, integração automatizada entre todas as etapas e modelos de recomendação fazem parte da evolução proposta. Os documentos de arquitetura e pipeline também descrevem esse escopo planejado.
 
@@ -53,6 +53,7 @@ HDFS, processamento distribuído com Spark, integração automatizada entre toda
 │   ├── etl.r                   # Tratamento de dados em R
 │   ├── etl.Rmd                 # Documento R Markdown
 │   ├── data/                   # CSVs de entrada do ETL em R
+│   ├── raw_data/               # CSVs brutos gerados pelo R Markdown
 │   ├── clean_data/             # CSVs tratados
 │   └── README.md
 ├── monitoring/README.md
@@ -96,20 +97,19 @@ tofu output ips
 cd ../..
 ```
 
-O provisionamento gera `infra/ansible/inventory.ini`. Depois que o cloud-init terminar e o SSH estiver disponível, teste a conexão e execute o playbook:
+O provisionamento gera `infra/ansible/inventory.ini`. A partir da raiz do repositório, execute:
 
 ```bash
-ansible all -i infra/ansible/inventory.ini -m ping
 ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/setup.yml
 ```
 
-O playbook configura Grafana e Prometheus na VM de monitoramento e Node Exporter na geradora. Na VM do simulador, instala dependências e cria `/opt/simulator`; a cópia inicial do código e a inicialização dos serviços do simulador são etapas manuais. A atualização do gerador existente com métricas pode ser habilitada separadamente, conforme [Monitoramento](monitoring/README.md).
+O playbook aguarda SSH e cloud-init, atualiza os pacotes e instala Docker, Compose e Buildx nas duas VMs. Ele copia `simulator/` para a VM geradora, inicia PostgreSQL, API, gerador e Adminer, e provisiona Node Exporter, Prometheus e Grafana. A execução verifica as tabelas, a API, a coleta das métricas e o dashboard. Ao final, a saída do playbook inclui `SIMULATOR_API_URL` para o R Markdown.
 
 Os arquivos de estado do OpenTofu, `terraform.tfvars`, `.terraform/` e o inventário gerado são específicos de cada ambiente e não devem ser versionados. Consulte os detalhes em [Infraestrutura](infra/README.md).
 
 ## Executar o simulador
 
-Na máquina que hospedará o simulador, com Docker e o plugin Docker Compose instalados, execute a partir da raiz de uma cópia do repositório:
+Para executar o simulador fora das VMs do laboratório, use estes comandos em uma máquina com Docker e o plugin Docker Compose:
 
 ```bash
 docker compose -f simulator/docker-compose.yml up -d --build
@@ -167,7 +167,16 @@ A coleta salva CSVs em `big-data/datalake/raw_data/`. A limpeza padroniza textos
 
 ### Rotinas em R
 
-Com R instalado e os seis CSVs disponíveis em `pipeline/data/`, execute:
+Para coletar, limpar e publicar os dados pelo R Markdown, substitua `<IP_SIMULATOR>` pelo endereço da VM geradora:
+
+```bash
+SIMULATOR_API_URL='http://<IP_SIMULATOR>:5000/api/tabelas' \
+  Rscript -e 'rmarkdown::render("pipeline/etl.Rmd")'
+```
+
+O relatório gera `pipeline/raw_data/<tabela>.csv` e `pipeline/clean_data/<tabela>_clean.csv`. Depois da validação, atualiza os arquivos `<tabela>.csv` em `big-data/datalake/raw_data/` e `big-data/datalake/clean_data/`. Veja as dependências e o modo offline na [documentação do pipeline](pipeline/README.md).
+
+O script `etl.r` também pode ser executado com os seis CSVs de `pipeline/data/`:
 
 ```bash
 cd pipeline
@@ -175,7 +184,7 @@ Rscript etl.r
 cd ..
 ```
 
-O script carrega os pacotes `tidyverse`, `lubridate`, `scales`, `knitr` e `janitor` via `pacman`, podendo instalá-los na primeira execução. Os resultados são gravados em `pipeline/clean_data/`. O arquivo `pipeline/etl.Rmd` contém a versão em R Markdown.
+O script `etl.r` carrega suas dependências via `pacman` e grava os resultados em `pipeline/clean_data/`.
 
 ### Exportar o SQLite
 
@@ -199,19 +208,19 @@ ansible monitoring -i infra/ansible/inventory.ini --become \
 
 O Grafana utiliza um volume Docker persistente. O Ansible provisiona a fonte Prometheus e o dashboard **Monitoramento — VM Geradora**, na pasta **Infraestrutura**, com atualização a cada 15 segundos. O dashboard também está em `http://<IP_DA_VM_MONITORING>:3000/d/vm-geradora`; Prometheus fica em `http://<IP_DA_VM_MONITORING>:9090`.
 
-Para adicionar monitoramento às VMs existentes, execute, após autorizar a implantação:
+Para reaplicar o monitoramento de um ambiente em funcionamento, use:
 
 ```bash
 ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/monitoring.yml
 ```
 
-Essa implementação foi validada localmente e por inspeções SSH somente de leitura; sua implantação nas VMs permanece pendente. Consulte [Monitoramento e observabilidade](monitoring/README.md) para arquitetura, restrições de acesso, métricas opcionais do gerador, arquivos criados e comandos de validação.
+Consulte a arquitetura, as portas e os comandos de validação em [Monitoramento e observabilidade](monitoring/README.md).
 
 ## Documentação complementar
 
 - [Infraestrutura e provisionamento](infra/README.md)
 - [Arquitetura proposta e fluxo de dados](docs/arquitetura.md)
-- [Escopo planejado dos pipelines ETL](pipeline/README.md)
+- [Pipeline ETL em R Markdown](pipeline/README.md)
 - [Monitoramento e observabilidade](monitoring/README.md)
 
 Projeto Interdisciplinar em Data Science — **Espaço MR | CHS**.

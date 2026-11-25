@@ -5,11 +5,6 @@
   register: monitoring_grafana_container
   changed_when: false
 
-- name: Exigir Grafana existente sem reinstalação
-  ansible.builtin.assert:
-    that: monitoring_grafana_container.stdout | length > 0
-    fail_msg: Execute setup.yml para preparar Docker e Grafana antes de monitoring.yml.
-
 - name: Inspecionar redes e volume persistente do Grafana
   ansible.builtin.command:
     argv: [docker, inspect, "{{ monitoring_grafana_container.stdout | trim }}"]
@@ -173,3 +168,16 @@
     map(attribute='value') | map('last') | unique | list == ['1']
   retries: 18
   delay: 5
+
+- name: Confirmar que os geradores completaram ciclos de produção
+  ansible.builtin.uri:
+    url: >-
+      http://127.0.0.1:{{ prometheus_port }}/api/v1/query?query={{
+        'simulator_generation_cycles_total{job="aplicacao-geradora"} > 0 and simulator_ready == 1' | urlencode }}
+  register: prometheus_generator_cycles
+  until: >-
+    prometheus_generator_cycles.status | default(0) == 200 and
+    (prometheus_generator_cycles.json | default({})).get('data', {}).get('result', []) | length == groups['simulator'] | length
+  retries: 18
+  delay: 5
+  when: simulator_metrics_enabled | bool

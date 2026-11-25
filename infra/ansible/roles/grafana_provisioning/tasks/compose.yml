@@ -1,0 +1,82 @@
+---
+- name: Criar diretório de configuração do monitoramento
+  ansible.builtin.file:
+    path: /opt/monitoring
+    state: directory
+    owner: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Gerar senha inicial do administrador do Grafana
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/python3
+      - -c
+      - |
+        import os
+        import secrets
+        fd = os.open('/opt/monitoring/grafana_admin_password',
+                     os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o400)
+        with os.fdopen(fd, 'w') as password_file:
+            password_file.write(secrets.token_urlsafe(32))
+    creates: /opt/monitoring/grafana_admin_password
+  no_log: true
+
+- name: Permitir leitura da senha pelo usuário do Grafana no container
+  ansible.builtin.file:
+    path: /opt/monitoring/grafana_admin_password
+    owner: "472"
+    group: "0"
+    mode: "0400"
+
+- name: Criar diretórios de provisioning do Grafana
+  ansible.builtin.file:
+    path: "/opt/monitoring/grafana/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - provisioning/datasources
+    - provisioning/dashboards
+    - dashboards
+
+- name: Configurar Docker Compose do Grafana
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/../templates/monitoring-compose.yml.j2"
+    dest: /opt/monitoring/compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+    backup: true
+
+- name: Iniciar Grafana com Docker Compose
+  ansible.builtin.command:
+    argv:
+      - docker
+      - compose
+      - --ansi
+      - never
+      - --project-directory
+      - /opt/monitoring
+      - --file
+      - /opt/monitoring/compose.yml
+      - up
+      - -d
+      - --pull
+      - missing
+      - grafana
+  register: grafana_compose
+  changed_when: >-
+    (grafana_compose.stdout ~ grafana_compose.stderr)
+    is search('Creating|Created|Starting|Started|Recreate|Pulling|Pulled')
+
+- name: Aguardar Grafana ficar disponível
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ grafana_port }}/api/health"
+    return_content: true
+  register: grafana_health
+  until: >-
+    grafana_health.status | default(0) == 200 and
+    (grafana_health.json | default({})).get('database') == 'ok'
+  retries: 30
+  delay: 5

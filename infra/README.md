@@ -50,12 +50,12 @@ infra/
         ├── prometheus/
         ├── grafana_provisioning/
         ├── metrics_firewall/
+        ├── simulator/
         └── simulator_metrics/
 ```
 
 O OpenTofu administra recursos de infraestrutura. O Ansible administra pacotes,
-serviços e configurações. A implantação inicial do código do simulador é uma
-etapa separada, descrita adiante.
+serviços, implantação do simulador e configuração do monitoramento.
 
 ## 2. Preparar o host
 
@@ -286,128 +286,43 @@ ansible all -i infra/ansible/inventory.ini -m ansible.builtin.ping
 O cloud-init deve concluir com `status: done`; ambas as VMs devem responder
 `pong`. Se houver falha, consulte a seção de diagnóstico antes de continuar.
 
-## 5. Configurar Docker e monitoramento com Ansible
+## 5. Implantar o ambiente com Ansible
 
-Valide e aplique o playbook completo:
-
-```bash
-ansible-playbook -i infra/ansible/inventory.ini \
-  infra/ansible/playbooks/setup.yml --syntax-check
-ansible-playbook -i infra/ansible/inventory.ini \
-  infra/ansible/playbooks/setup.yml
-```
-
-O playbook:
-
-- Instala Docker Engine nas duas VMs e adiciona `marcos` ao grupo `docker`.
-- Cria o Compose do Grafana em `/opt/monitoring`, sua senha inicial e o volume
-  persistente, aguardando a saúde do serviço.
-- Prepara Python, dependências e `/opt/simulator` na geradora.
-- Importa `monitoring.yml`, que instala Node Exporter na geradora, Prometheus
-  no monitoramento e provisiona a fonte e o dashboard do Grafana.
-- Valida a configuração com `promtool`, a coleta da geradora, os targets `UP`,
-  a comunicação do Grafana com Prometheus e o dashboard carregado.
-
-As variáveis compartilhadas ficam em
-[`ansible/group_vars/all/monitoring.yml`](ansible/group_vars/all/monitoring.yml).
-Os padrões são Grafana em 3000, Prometheus em 9090 e Node Exporter em 9100,
-com coleta a cada 15 segundos. O dashboard se chama
-**Monitoramento — VM Geradora**, na pasta **Infraestrutura**.
-
-O código do simulador ainda precisa ser copiado e seus containers iniciados,
-conforme a próxima etapa. Mantenha `simulator_metrics_enabled: false` durante
-essa primeira configuração, pois a opção exige um gerador já em execução.
-
-## 6. Implantar e iniciar o simulador pela primeira vez
-
-Os comandos desta etapa são para a **primeira implantação** em `/opt/simulator`.
-Em um ambiente já em execução, consulte primeiro a seção de manutenção.
-
-Garanta os plugins necessários para executar Compose e construir imagens na
-VM geradora; a instalação explícita evita depender de recomendações do APT:
+Com as duas VMs ligadas e o inventário gerado pelo OpenTofu, execute a partir
+da raiz do repositório:
 
 ```bash
-ansible simulator -i infra/ansible/inventory.ini --become \
-  -m ansible.builtin.apt \
-  -a 'name=docker-compose-plugin,docker-buildx-plugin state=present update_cache=true cache_valid_time=3600'
+ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/setup.yml
 ```
 
-Copie o código local e valide o Compose:
+O playbook aguarda SSH e cloud-init, atualiza pacotes pelo APT e instala
+Docker Engine, Compose e Buildx nas duas VMs. Ele envia os arquivos de
+`simulator/` para a VM geradora, constrói as imagens e inicia PostgreSQL, API,
+gerador e Adminer. A execução aguarda as seis tabelas e confirma que a API
+retorna vendas.
 
-```bash
-ansible simulator -i infra/ansible/inventory.ini --become \
-  -m ansible.builtin.copy \
-  -a 'src=simulator/ dest=/opt/simulator/ owner=marcos mode=preserve directory_mode=0755'
-ansible simulator -i infra/ansible/inventory.ini --become \
-  -m ansible.builtin.command \
-  -a 'docker compose --project-directory /opt/simulator config --quiet'
-```
+O mesmo comando instala Node Exporter e Prometheus, sobe o Grafana e
+provisiona a fonte Prometheus e o dashboard **Monitoramento — VM Geradora**.
+O playbook verifica os targets `UP`, a geração de dados, a comunicação entre
+Grafana e Prometheus e o carregamento do dashboard.
 
-Construa as imagens e inicie os quatro serviços:
+As portas padrão são 3000 para Grafana, 9090 para Prometheus, 9100 para Node
+Exporter e 8000 para as métricas do gerador. As métricas são habilitadas por
+padrão para o IP da VM de monitoramento mostrado no inventário. As variáveis
+compartilhadas estão em [monitoring.yml](ansible/group_vars/all/monitoring.yml).
 
-```bash
-ansible simulator -i infra/ansible/inventory.ini --become \
-  -m ansible.builtin.command \
-  -a 'docker compose --project-directory /opt/simulator up -d --build'
-ansible simulator -i infra/ansible/inventory.ini --become \
-  -m ansible.builtin.command \
-  -a 'docker compose --project-directory /opt/simulator ps'
-ansible simulator -i infra/ansible/inventory.ini --become \
-  -m ansible.builtin.command \
-  -a 'docker compose --project-directory /opt/simulator logs --tail 50 generator'
-```
+## 6. Localizar o projeto e os dados do simulador
 
-O gerador inicializa clientes, vendedores e estoque ausentes e passa a produzir
-vendas, crediário e promoções em ciclos de cinco segundos, com inconsistências
-sintéticas configuradas por `--taxa-erro 0.04`. O PostgreSQL utiliza o volume
-`simulator_postgres_data` no projeto Compose padrão `simulator`.
+O diretório padrão é `/opt/simulator` e o volume do PostgreSQL se chama
+`simulator_postgres_data`. Se os containers já existem, o playbook usa o
+diretório e o nome do projeto registrados pelo Compose, inclusive para
+containers parados. Arquivos de código alterados na VM recebem backup e as
+variáveis de métricas são atualizadas no bloco gerenciado do `.env`.
 
-Aguarde a inicialização do banco e do gerador antes de consultar as tabelas:
-
-```bash
-ansible simulator -i infra/ansible/inventory.ini \
-  -m ansible.builtin.uri -a 'url=http://127.0.0.1:5000/health'
-ansible simulator -i infra/ansible/inventory.ini \
-  -m ansible.builtin.uri \
-  -a 'url=http://127.0.0.1:5000/api/vendas?limit=5&offset=0 return_content=true'
-```
-
-O endpoint de saúde deve responder HTTP 200 com banco conectado. O segundo
-comando deve retornar vendas após um ciclo de geração bem-sucedido.
-
-### 6.1 Habilitar métricas da aplicação
-
-Depois que o gerador estiver ativo:
-
-```bash
-ansible-playbook -i infra/ansible/inventory.ini \
-  infra/ansible/playbooks/monitoring.yml \
-  -e simulator_metrics_enabled=true \
-  -e simulator_compose_dir=/opt/simulator
-```
-
-A role confere o diretório do projeto já em execução, atualiza a instrumentação,
-grava `/opt/simulator/compose.metrics.yml` e reconstrói/reinicia somente o gerador.
-Adiciona o job `aplicacao-geradora` ao Prometheus. Banco, API e Adminer continuam
-em execução.
-
-Para conservar essa opção nas próximas aplicações, configure no arquivo de
-variáveis compartilhadas:
-
-```yaml
-simulator_metrics_enabled: true
-simulator_compose_dir: /opt/simulator
-```
-
-Outra opção é repetir os mesmos parâmetros `-e` em todas as aplicações. Com o
-padrão `false`, o job da aplicação fica desabilitado. Em operações manuais no
-simulador instrumentado, inclua ambos os arquivos Compose; por exemplo:
-
-```bash
-ansible simulator -i infra/ansible/inventory.ini --become \
-  -m ansible.builtin.command \
-  -a 'docker compose --project-directory /opt/simulator -f /opt/simulator/docker-compose.yml -f /opt/simulator/compose.metrics.yml ps'
-```
+O gerador inicializa as tabelas e passa a produzir dados em ciclos de cinco
+segundos, com inconsistências sintéticas configuradas no Compose. O endereço
+`SIMULATOR_API_URL` exibido pelo playbook pode ser usado para renderizar o
+relatório. [Pipeline ETL](../pipeline/README.md)
 
 ## 7. Acessar e validar os serviços
 
@@ -475,26 +390,22 @@ acessar a UI do Prometheus de outro cliente, acrescente seu IP/CIDR a
 
 ## 8. Manutenção do ambiente existente
 
-Para uma infraestrutura já provisionada, mantenha o estado e a chave SSH,
-confira os IPs e utilize Ansible para alterar serviços. Não é necessário aplicar
-OpenTofu para atualizar o monitoramento:
+Reexecute `setup.yml` para atualizar pacotes, reaplicar o código do simulador
+e reconciliar a configuração dos serviços nos dois grupos. Os volumes do
+PostgreSQL e do Grafana são reutilizados. Quando o DHCP mudar, atualize o
+inventário antes de executar o playbook.
+
+Para reaplicar somente o monitoramento com Docker e o simulador já
+disponíveis, execute:
 
 ```bash
-tofu -chdir=infra/iac output ips
-ansible all -i infra/ansible/inventory.ini -m ansible.builtin.ping
-ansible-playbook -i infra/ansible/inventory.ini \
-  infra/ansible/playbooks/monitoring.yml
+ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/monitoring.yml
 ```
 
-Mantenha os parâmetros da instrumentação quando ela estiver habilitada. Esse
-playbook espera Docker, Compose e Grafana já preparados. Para reaplicar toda a
-configuração de pacotes e serviços, use `setup.yml`. Execute os playbooks nos
-dois grupos: `--limit monitoring` não instala nem atualiza os componentes da
-geradora e pode falhar na verificação dos targets.
-
-Não repita a cópia completa do simulador sobre uma instalação personalizada.
-A atualização opcional de métricas já copia os três arquivos necessários com
-backup e mantém o projeto Compose existente.
+Em uma instalação antiga sem métricas do gerador, execute o fluxo completo
+para atualizar o simulador ou passe `-e simulator_metrics_enabled=false`
+para coletar as métricas da VM. O monitoramento consulta as duas VMs para
+verificar os targets. [Monitoramento](../monitoring/README.md)
 
 ### 8.1 Iniciar após desligar o computador
 
@@ -573,7 +484,7 @@ OpenTofu e o impacto nos dados existentes.
 | SSH demora ou não conecta | Confira o lease atual, a chave e o fim do cloud-init; utilize `wait_for_connection` antes do setup. |
 | `Permission denied (publickey)` | Confira `ssh_key_path`, a chave pública usada no primeiro boot e o usuário `marcos`. Alterar a variável depois não instala outra chave na VM já criada. |
 | APT bloqueado no primeiro boot | Aguarde `cloud-init status --wait` e os processos de atualização existentes. |
-| `docker compose` ou Buildx indisponível na geradora | Instale os plugins conforme a etapa 6 e confira `docker compose version`. |
+| `docker compose` ou Buildx indisponível na geradora | Reaplique `setup.yml` e confira `docker compose version`. |
 | Permissão negada no Docker em sessão SSH antiga | Abra nova sessão após a inclusão no grupo `docker`, ou use Ansible com `--become`. |
 | API inicia, mas tabelas ainda não existem | Confira os logs do gerador e aguarde um ciclo concluído; o endpoint `/health` testa a conexão, não a existência das tabelas. |
 | Gerador/API reiniciando | Consulte `docker compose ps` e logs de `db`, `api` e `generator`; o banco pode ainda estar inicializando. |
@@ -581,7 +492,7 @@ OpenTofu e o impacto nos dados existentes.
 | Node Exporter não responde a partir do host | Acesso direto do host à porta 9100 é bloqueado por projeto; teste a partir de `monitoring`. |
 | Prometheus abre localmente, mas não no navegador | Confira o IP do cliente em `prometheus_ui_allowed_sources` e a origem da conexão. |
 | Target DOWN | Teste `/metrics` a partir de `monitoring`, confira IPs, portas, serviços e `iptables -S MR-VM-METRICS`. |
-| Painéis da aplicação sem dados | Confira se a opção está habilitada, se o override foi mantido e se `aplicacao-geradora` está UP. |
+| Painéis da aplicação sem dados | Confira as variáveis de métricas do simulador e se o job `aplicacao-geradora` está UP. |
 | `Dashboard ausente` com Grafana 13 | Utilize a role atualizada: a validação contempla `resource` (armazenamento unificado); a tabela antiga `dashboard` pode ficar vazia. |
 
 Comandos de logs, sem reiniciar os serviços:

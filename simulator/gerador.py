@@ -87,11 +87,10 @@ def gerar_vendas(n: int, clientes: pd.DataFrame, vendedores: pd.DataFrame,
     linhas = []
     ids_cliente = clientes["id_cliente"].tolist()
     ids_vendedor = vendedores["id_vendedor"].tolist()
-    produtos_idx = estoque.set_index("id_produto")
 
     for i in range(n):
         id_venda = id_inicio + i  
-        produto_row = produtos_idx.loc[random.choice(produtos_idx.index)]
+        produto_row = estoque.iloc[random.randrange(len(estoque))]
         
         # Define a quantidade vendida antes dos cálculos
         quantidade = random.randint(1, 5)
@@ -121,7 +120,7 @@ def gerar_vendas(n: int, clientes: pd.DataFrame, vendedores: pd.DataFrame,
             "id_venda": id_venda,
             "data_venda": data_venda.strftime("%Y-%m-%d"),
             "hora_venda": f"{random.randint(9, 21):02d}:{random.choice(['00', '15', '30', '45'])}",
-            "id_produto": produto_row.name,
+            "id_produto": produto_row["id_produto"],
             "produto": produto_row["produto"],
             "categoria": produto_row["categoria"],
             "cor": produto_row["cor"],

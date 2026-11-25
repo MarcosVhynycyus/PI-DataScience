@@ -7,14 +7,17 @@ output:
     number_sections: true
 params:
   atualizar_api: true
+  url_api: !r Sys.getenv("SIMULATOR_API_URL", "http://127.0.0.1:5000/api/tabelas")
 ---
 
 Este relatório segue **API → raw_data/ → diagnóstico → gráficos → interpretação
-→ limpeza → clean_data/ → validação**. Completude, validade, consistência, unicidade,
+→ limpeza → clean_data/ → validação → datalake**. Completude, validade, consistência, unicidade,
 estatística descritiva e gráficos exploratórios.
 
-Os arquivos ficam ao lado deste documento, na pasta `pipeline/`. Por padrão,
-cada execução consulta os seis endpoints. Para repetir apenas a análise de uma
+Os arquivos são exportados em `pipeline/` e publicados nas pastas `raw_data/`
+e `clean_data/` de `big-data/datalake/` após a validação. Por padrão, cada
+execução consulta os seis endpoints. Defina `SIMULATOR_API_URL` ou o parâmetro
+`url_api` para apontar para a VM do simulador. Para repetir a análise de uma
 extração já realizada, use o parâmetro `atualizar_api = FALSE` na renderização.
 Esse modo exige os seis CSVs em `raw_data/`; falhas da API nunca acionam uma
 troca silenciosa por dados antigos. Os CSVs tratados mantêm os nomes
@@ -40,7 +43,10 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = TRUE,
                       error = FALSE, cache = FALSE, results = "asis",
                       fig.width = 10, fig.height = 6)
 theme_set(theme_minimal(base_size = 11))
-if (!exists("params")) params <- list(atualizar_api = TRUE)
+if (!exists("params")) {
+  params <- list(atualizar_api = TRUE,
+                 url_api = Sys.getenv("SIMULATOR_API_URL", "http://127.0.0.1:5000/api/tabelas"))
+}
 
 arquivo_rmd <- knitr::current_input(dir = TRUE)
 pasta_pipeline <- if (!is.null(arquivo_rmd)) {
@@ -52,6 +58,7 @@ pasta_pipeline <- if (!is.null(arquivo_rmd)) {
 }
 pasta_raw <- file.path(pasta_pipeline, "raw_data")
 pasta_clean <- file.path(pasta_pipeline, "clean_data")
+pasta_datalake <- file.path(dirname(pasta_pipeline), "big-data", "datalake")
 
 # O contrato de colunas vem das tabelas e do gerador já existentes no projeto.
 # IDs ficam como texto: são chaves, não medidas para calcular médias ou IQR.
@@ -179,8 +186,6 @@ representado como `null`, preservando seu significado de valor ausente. Um
 texto como `"NaN"` ou `"Produto NaN"` continua intacto nesta etapa.
 
 ```{r extracao}
-url_base <- "http://192.168.122.92:5000/api/tabelas"
-endpoints <- set_names(paste0(url_base, "/", tabelas), tabelas)
 arquivos_raw <- set_names(file.path(pasta_raw, paste0(tabelas, ".csv")), tabelas)
 
 extrair_tabela <- function(url, nome) {
@@ -209,6 +214,8 @@ extrair_tabela <- function(url, nome) {
 }
 
 if (isTRUE(params$atualizar_api)) {
+  url_base <- sub("/+$", "", params$url_api)
+  endpoints <- set_names(paste0(url_base, "/", tabelas), tabelas)
   # Valida as seis respostas antes de substituir qualquer CSV de uma coleta anterior.
   dados_api <- imap(endpoints, extrair_tabela)
   dir.create(pasta_raw, showWarnings = FALSE, recursive = TRUE)
@@ -974,3 +981,34 @@ Os resultados devem ser lidos junto às pendências: os arquivos tratados
 preservam observações extremas legítimas, variantes de um mesmo ID e valores
 que dependem de conciliação. A limpeza torna os erros explícitos e rastreáveis;
 não declara esses casos resolvidos sem evidência na origem.
+
+# Publicação no datalake
+
+Os dois conjuntos mantêm o nome `<tabela>.csv` no datalake, conforme os
+caminhos usados pelos notebooks de Big Data.
+
+```{r publicacao-datalake}
+publicar_csvs <- function(origens, destinos) {
+  pastas <- dirname(destinos)
+  if (!all(dir.exists(pastas))) {
+    stop("Diretórios ausentes no datalake: ", paste(unique(pastas[!dir.exists(pastas)]), collapse = ", "))
+  }
+  temporarios <- vapply(pastas, function(pasta) tempfile(".etl-", tmpdir = pasta),
+                        character(1), USE.NAMES = FALSE)
+  on.exit(unlink(temporarios))
+  copiados <- file.copy(origens, temporarios)
+  if (!all(copiados)) {
+    stop("Falha ao preparar CSVs do datalake: ", paste(origens[!copiados], collapse = ", "))
+  }
+  publicados <- file.rename(temporarios, destinos)
+  if (!all(publicados)) {
+    stop("Falha ao publicar CSVs do datalake: ", paste(destinos[!publicados], collapse = ", "))
+  }
+}
+
+destinos_raw <- file.path(pasta_datalake, "raw_data", basename(arquivos_raw))
+destinos_clean <- file.path(pasta_datalake, "clean_data", paste0(names(arquivos_clean), ".csv"))
+publicar_csvs(c(arquivos_raw, arquivos_clean), c(destinos_raw, destinos_clean))
+mostrar(tibble(tabela = tabelas, bruto = file.path("raw_data", basename(destinos_raw)),
+               tratado = file.path("clean_data", basename(destinos_clean))))
+```

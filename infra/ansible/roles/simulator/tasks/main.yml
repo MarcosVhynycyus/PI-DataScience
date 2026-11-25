@@ -1,0 +1,112 @@
+---
+- name: Identificar containers preexistentes
+  ansible.builtin.command:
+    argv: [docker, container, ls, --all, --format, "{% raw %}{{.Names}}{% endraw %}"]
+  register: simulator_container_names
+  changed_when: false
+
+- name: Ler labels do projeto Compose existente
+  ansible.builtin.command:
+    argv: [docker, inspect, --format, "{% raw %}{{json .Config.Labels}}{% endraw %}", "{{ item }}"]
+  loop: "{{ simulator_container_names.stdout_lines | intersect(['simulator_db', 'simulator_api', 'simulator_generator', 'simulator_adminer']) | sort }}"
+  register: simulator_container_inspections
+  changed_when: false
+
+- name: Inicializar identificação do projeto Compose
+  ansible.builtin.set_fact:
+    simulator_existing_paths: []
+    simulator_existing_projects: []
+
+- name: Identificar diretório e nome do projeto existente
+  ansible.builtin.set_fact:
+    simulator_existing_paths: >-
+      {{ (simulator_existing_paths + [labels.get('com.docker.compose.project.working_dir', '')]) | unique | list }}
+    simulator_existing_projects: >-
+      {{ (simulator_existing_projects + [labels.get('com.docker.compose.project', '')]) | unique | list }}
+  vars:
+    labels: "{{ item.stdout | from_json or {} }}"
+  loop: "{{ simulator_container_inspections.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+
+- name: Confirmar que a implantação usa o mesmo projeto e volume do banco
+  ansible.builtin.assert:
+    that:
+      - simulator_compose_dir is match('^/')
+      - simulator_compose_project is match('^[a-z0-9][a-z0-9_-]*$')
+      - simulator_existing_paths in [[], [simulator_compose_dir]]
+      - simulator_existing_projects in [[], [simulator_compose_project]]
+    fail_msg: Os containers fixos do simulador devem pertencer ao mesmo projeto Compose e diretório de implantação.
+
+- name: Criar diretório do projeto Compose
+  ansible.builtin.file:
+    path: "{{ simulator_compose_dir }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    mode: "0755"
+
+- name: Enviar código e arquivos de implantação do simulador
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ simulator_compose_dir }}/{{ item | basename }}"
+    owner: "{{ ansible_user }}"
+    mode: "0644"
+    backup: true
+  with_fileglob:
+    - "{{ simulator_source_dir }}/*.py"
+    - "{{ simulator_source_dir }}/Dockerfile"
+    - "{{ simulator_source_dir }}/requirements.txt"
+    - "{{ simulator_source_dir }}/docker-compose.yml"
+
+- name: Configurar publicação de métricas a partir do inventário
+  ansible.builtin.blockinfile:
+    path: "{{ simulator_compose_dir }}/.env"
+    create: true
+    owner: "{{ ansible_user }}"
+    mode: "0600"
+    marker: "# {mark} ANSIBLE METRICAS DO SIMULADOR"
+    block: |
+      SIMULATOR_METRICS_ENABLED={{ simulator_metrics_enabled | bool | ternary('true', 'false') }}
+      SIMULATOR_METRICS_BIND={{ (simulator_metrics_enabled | bool) | ternary(ansible_host | default(inventory_hostname), '127.0.0.1') }}
+      SIMULATOR_METRICS_PORT={{ simulator_metrics_port }}
+      SIMULATOR_METRICS_ALLOWED_SOURCES={{ monitoring_address }}
+
+- name: Validar configuração do simulador
+  ansible.builtin.command:
+    argv: "{{ simulator_compose_command + ['config', '--quiet'] }}"
+  changed_when: false
+
+- name: Construir imagens e iniciar os quatro serviços
+  ansible.builtin.command:
+    argv: "{{ simulator_compose_command + ['up', '--build', '--wait', '--wait-timeout', '180'] }}"
+  register: simulator_compose_up
+  changed_when: >-
+    (simulator_compose_up.stdout ~ simulator_compose_up.stderr)
+    is search('Creating|Created|Starting|Started|Recreat')
+
+- name: Aguardar as seis tabelas do simulador
+  ansible.builtin.command:
+    argv: >-
+      {{ simulator_compose_command + ['exec', '-T', 'db', 'psql', '-U', 'user', '-d', 'varejo_db',
+          '-Atc', simulator_table_query] }}
+  vars:
+    simulator_table_query: >-
+      SELECT count(*) FROM pg_tables WHERE schemaname = 'public'
+      AND tablename IN ('clientes', 'vendedores', 'estoque', 'vendas', 'crediario', 'promocoes')
+  register: simulator_tables
+  changed_when: false
+  until: simulator_tables.rc == 0 and simulator_tables.stdout | trim == '6'
+  retries: 30
+  delay: 5
+
+- name: Verificar que a API retorna os dados produzidos
+  ansible.builtin.uri:
+    url: http://127.0.0.1:5000/api/vendas?limit=1
+  register: simulator_api_sales
+  until: simulator_api_sales.status | default(0) == 200 and simulator_api_sales.json | default([]) | length > 0
+  retries: 12
+  delay: 5
+
+- name: Informar endereço da API para o R Markdown
+  ansible.builtin.debug:
+    msg: "SIMULATOR_API_URL=http://{{ ansible_host | default(inventory_hostname) }}:5000/api/tabelas"

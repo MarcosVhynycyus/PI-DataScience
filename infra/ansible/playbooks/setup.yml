@@ -1,16 +1,46 @@
 ---
-- name: Preparar todas as VMs (Docker)
-  hosts: all
-  become: true
+- name: Validar inventário do laboratório
+  hosts: localhost
+  gather_facts: false
   tasks:
-    - name: Atualizar cache apt
+    - name: Conferir grupos das VMs
+      ansible.builtin.assert:
+        that:
+          - groups.get('monitoring', []) | length == 1
+          - groups.get('simulator', []) | length > 0
+          - groups['monitoring'] | intersect(groups['simulator']) | length == 0
+        fail_msg: Use o inventário gerado pelo OpenTofu com os grupos monitoring e simulator.
+
+- name: Atualizar pacotes e instalar Docker nas VMs
+  hosts: monitoring:simulator
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  pre_tasks:
+    - name: Aguardar acesso às VMs
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+
+    - name: Aguardar a configuração inicial do cloud-init
+      ansible.builtin.command: cloud-init status --wait
+      changed_when: false
+
+    - name: Coletar informações do sistema
+      ansible.builtin.setup:
+
+  tasks:
+    - name: Atualizar pacotes do sistema
       ansible.builtin.apt:
         update_cache: true
+        cache_valid_time: 3600
+        upgrade: safe
+        lock_timeout: 180
 
-    - name: Instalar dependências
+    - name: Instalar dependências do repositório Docker
       ansible.builtin.apt:
         name: [ca-certificates, curl, gnupg]
         state: present
+        lock_timeout: 180
 
     - name: Criar diretório de chaves apt
       ansible.builtin.file:
@@ -29,136 +59,32 @@
         repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable"
         filename: docker
 
-    - name: Instalar Docker Engine
+    - name: Instalar Docker Engine, Compose e Buildx
       ansible.builtin.apt:
-        name: [docker-ce, docker-ce-cli, containerd.io]
-        update_cache: true
+        name: [docker-ce, docker-ce-cli, containerd.io, docker-compose-plugin, docker-buildx-plugin]
         state: present
+        lock_timeout: 180
 
-    - name: Adicionar marcos ao grupo docker
+    - name: Adicionar usuário do inventário ao grupo docker
       ansible.builtin.user:
-        name: marcos
+        name: "{{ ansible_user }}"
         groups: docker
         append: true
 
-    - name: Garantir serviço Docker ativo
-      ansible.builtin.systemd:
+    - name: Habilitar e iniciar Docker
+      ansible.builtin.systemd_service:
         name: docker
         state: started
         enabled: true
 
-- name: Configurar VM de Monitoramento
-  hosts: monitoring
-  become: true
-  tasks:
-    - name: Instalar plugin Docker Compose
-      ansible.builtin.apt:
-        name: docker-compose-plugin
-        state: present
-
-    - name: Criar diretório de configuração do monitoramento
-      ansible.builtin.file:
-        path: /opt/monitoring
-        state: directory
-        owner: marcos
-        mode: "0755"
-
-    - name: Gerar senha inicial do administrador do Grafana
-      ansible.builtin.command:
-        argv:
-          - /usr/bin/python3
-          - -c
-          - |
-            import os
-            import secrets
-            fd = os.open('/opt/monitoring/grafana_admin_password',
-                         os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o400)
-            with os.fdopen(fd, 'w') as password_file:
-                password_file.write(secrets.token_urlsafe(32))
-        creates: /opt/monitoring/grafana_admin_password
-      no_log: true
-
-    - name: Permitir leitura da senha pelo usuário do Grafana no container
-      ansible.builtin.file:
-        path: /opt/monitoring/grafana_admin_password
-        owner: "472"
-        group: "0"
-        mode: "0400"
-
-    - name: Criar diretórios de provisioning do Grafana
-      ansible.builtin.file:
-        path: "/opt/monitoring/grafana/{{ item }}"
-        state: directory
-        owner: root
-        group: root
-        mode: "0755"
-      loop:
-        - provisioning/datasources
-        - provisioning/dashboards
-        - dashboards
-
-    - name: Configurar Docker Compose do Grafana
-      ansible.builtin.template:
-        src: "{{ playbook_dir }}/../templates/monitoring-compose.yml.j2"
-        dest: /opt/monitoring/compose.yml
-        owner: root
-        group: root
-        mode: "0644"
-
-    - name: Iniciar Grafana com Docker Compose
-      ansible.builtin.command:
-        argv:
-          - docker
-          - compose
-          - --ansi
-          - never
-          - --project-directory
-          - /opt/monitoring
-          - up
-          - -d
-          - --pull
-          - missing
-      register: grafana_compose
-      changed_when: >-
-        (grafana_compose.stdout ~ grafana_compose.stderr)
-        is search('Creating|Created|Starting|Started|Recreate|Pulling|Pulled')
-
-    - name: Aguardar Grafana ficar disponível
-      ansible.builtin.uri:
-        url: "http://127.0.0.1:{{ grafana_port }}/api/health"
-        return_content: true
-      register: grafana_health
-      until: >-
-        grafana_health.status | default(0) == 200 and
-        (grafana_health.json | default({})).get('database') == 'ok'
-      retries: 30
-      delay: 5
-
-- name: Configurar VM do Simulador
+- name: Implantar o simulador
   hosts: simulator
   become: true
-  tasks:
-    - name: Instalar Python3 e dependências necessárias
-      apt:
-        name:
-          - python3 
-          - python3-pip 
-          - python3-pandas 
-        state: present 
-        update_cache: yes
+  any_errors_fatal: true
+  roles:
+    - role: ../roles/simulator
 
-    - name: Instalar a biblioteca Faker via pip
-      pip:
-        name: faker
-        state: present
-        extra_args: "--break-system-packages"
-
-    - name: Criar diretório do simulador de dados
-      ansible.builtin.file:
-        path: /opt/simulator
-        state: directory
-        owner: marcos
-        mode: "0755"
-
-- name: Integrar monitoramento das VMs ao fluxo existente
+- name: Configurar monitoramento
   ansible.builtin.import_playbook: monitoring.yml
+  vars:
+    deploy_simulator: true

@@ -2,13 +2,30 @@
 - name: Configurar métricas da VM geradora
   hosts: simulator
   become: true
+  any_errors_fatal: true
   roles:
     - role: ../roles/node_exporter
-    - role: ../roles/simulator_metrics
+  tasks:
+    - name: Atualizar instrumentação de um gerador implantado à parte
+      ansible.builtin.include_role:
+        name: ../roles/simulator_metrics
+      when:
+        - not (deploy_simulator | default(false) | bool)
+        - simulator_metrics_enabled | bool
+        - simulator_compose_dir is defined
 
 - name: Configurar coleta e visualização na VM de monitoramento
   hosts: monitoring
   become: true
-  roles:
-    - role: ../roles/prometheus
-    - role: ../roles/grafana_provisioning
+  any_errors_fatal: true
+  tasks:
+    - name: Preparar e iniciar Grafana
+      ansible.builtin.import_role:
+        name: ../roles/grafana_provisioning
+        tasks_from: compose
+    - name: Configurar Prometheus
+      ansible.builtin.import_role:
+        name: ../roles/prometheus
+    - name: Configurar a fonte Prometheus e o dashboard no Grafana
+      ansible.builtin.import_role:
+        name: ../roles/grafana_provisioning

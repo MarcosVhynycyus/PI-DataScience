@@ -63,35 +63,27 @@ def rodar_simulador():
         cycle_started = time.monotonic()
         try:
             with engine.connect() as conn:
-                # 1. Busca o maior ID diretamente no banco; se a tabela não existir, assume 0
-                try:
-                    ultimo_id_venda = conn.execute(text("SELECT COALESCE(MAX(id_venda), 0) FROM vendas")).scalar() or 0
-                except Exception:
-                    ultimo_id_venda = 0
-
-                try:
-                    ultimo_id_parcela = conn.execute(text("SELECT COALESCE(MAX(id_parcela), 0) FROM crediario")).scalar() or 0
-                except Exception:
-                    ultimo_id_parcela = 0
-
-                try:
-                    ultimo_id_promocao = conn.execute(text("SELECT COALESCE(MAX(id_promocao), 0) FROM promocoes")).scalar() or 0
-                except Exception:
-                    ultimo_id_promocao = 0
+                tabelas_existentes = engine.dialect.get_table_names(conn)
+                ultimos_ids = {
+                    tabela: conn.execute(text(f"SELECT MAX({coluna}) FROM {tabela}")).scalar() or 0
+                    if tabela in tabelas_existentes else 0
+                    for tabela, coluna in (("vendas", "id_venda"), ("crediario", "id_parcela"),
+                                           ("promocoes", "id_promocao"))
+                }
 
             # 2. Gera o lote passando o id_inicio correto
             qtd_vendas_lote = random.randint(5, 20)
             vendas = gerar_vendas(
                 qtd_vendas_lote, clientes_df, vendedores_df, estoque_df, 
-                id_inicio=ultimo_id_venda + 1
+                id_inicio=ultimos_ids["vendas"] + 1
             )
             crediario = gerar_crediario(
                 vendas, 
-                id_inicio_parcela=ultimo_id_parcela + 1
+                id_inicio_parcela=ultimos_ids["crediario"] + 1
             )
             promocoes = gerar_promocoes(
                 1, estoque_df, 
-                id_inicio_promocao=ultimo_id_promocao + 1
+                id_inicio_promocao=ultimos_ids["promocoes"] + 1
             )
 
             sales_value = metrics.sales_value_before_noise(vendas)

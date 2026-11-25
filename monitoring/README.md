@@ -1,12 +1,10 @@
 # Monitoramento da VM geradora
 
-Implementação de Prometheus + Node Exporter + Grafana integrada ao Ansible.
-O código está preparado para implantação. Nenhum playbook de configuração foi
-executado nas VMs durante esta implementação.
+Monitoramento da VM e do gerador com Prometheus, Node Exporter e Grafana.
 
 ## Arquitetura e ambiente identificado
 
-O repositório e as consultas SSH somente de leitura confirmaram:
+O laboratório usa duas VMs com funções definidas no inventário:
 
 - As duas VMs usam Ubuntu Server 24.04; o OpenTofu mantém provisionamento,
   cloud-init, rede DHCP e geração de `infra/ansible/inventory.ini`.
@@ -22,7 +20,7 @@ O repositório e as consultas SSH somente de leitura confirmaram:
 
 ```mermaid
 flowchart LR
-    G[Gerador Python :8000 /metrics] -->|opcional| P[Prometheus :9090]
+    G[Gerador Python :8000 /metrics] -->|coleta a cada 15s| P[Prometheus :9090]
     N[Node Exporter :9100 /metrics] -->|coleta a cada 15s| P
     P --> F[Grafana Docker :3000]
     F --> D[Monitoramento — VM Geradora]
@@ -37,63 +35,34 @@ O endereço da fonte do Grafana é `http://<ansible_host de monitoring>:9090`:
 `localhost` dentro do container apontaria para o próprio Grafana. As sub-redes
 Docker são descobertas por inspeção, sem endereços de bridge fixos.
 
-## Aplicar em VMs já preparadas
+## Implantar o ambiente completo
 
-Execute na raiz do repositório, depois de autorizar a implantação:
-
-```bash
-ansible-playbook -i infra/ansible/inventory.ini \
-  infra/ansible/playbooks/monitoring.yml
-```
-
-Esse playbook instala os dois exporters/coletores de infraestrutura, configura
-Prometheus e provisiona o Grafana existente. A imagem do Grafana não é baixada
-novamente se já estiver disponível. A adição dos mounts de provisioning exige
-recriar o container do Grafana uma vez; mudanças nas fontes/provedores exigem
-reinício. O volume preserva usuários, senhas, dashboards e demais dados.
-
-O fluxo completo continua disponível por `setup.yml`, que importa
-`monitoring.yml` ao final. Não é necessário executar OpenTofu para adicionar
-monitoramento às VMs existentes:
+Com as VMs e o inventário provisionados, execute da raiz do repositório:
 
 ```bash
-ansible-playbook -i infra/ansible/inventory.ini \
-  infra/ansible/playbooks/setup.yml
+ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/setup.yml
 ```
 
-Aplique aos dois grupos: limitar a execução a `monitoring` não instala o Node
-Exporter na geradora e pode fazer o teste de disponibilidade falhar.
+O playbook implanta o simulador, habilita suas métricas e configura Node
+Exporter, Prometheus e Grafana. A origem permitida para as métricas do
+gerador é o IP da VM de monitoramento no inventário. Os dados do Grafana
+ficam no volume persistente.
 
-## Métricas da aplicação: implantação opcional
-
-A instrumentação está em `simulator/metrics.py` e `stream_generator.py`.
-O padrão `simulator_metrics_enabled: false` preserva a execução do container
-atual. Para instalar a versão instrumentada e adicionar seu job ao Prometheus:
+Em um ambiente já implantado, `monitoring.yml` reaplica o monitoramento.
+Execute nos dois grupos para permitir as verificações de coleta. A imagem
+do Grafana é baixada apenas se faltar na VM.
 
 ```bash
-ansible-playbook -i infra/ansible/inventory.ini \
-  infra/ansible/playbooks/monitoring.yml \
-  -e simulator_metrics_enabled=true \
-  -e simulator_compose_dir=/opt/simulator
+ansible-playbook -i infra/ansible/inventory.ini infra/ansible/playbooks/monitoring.yml
 ```
 
-`/opt/simulator` foi identificado nas labels do container em execução. A role
-confere esse diretório antes de escrever. Copia apenas o gerador, seu módulo de
-métricas e requisitos, com backup dos arquivos alterados; grava
-`compose.metrics.yml` e executa `up --no-deps` somente para `generator`.
-Banco, API, Adminer e volumes não são reiniciados. A versão dos arquivos fica em
-uma label para que uma construção malsucedida seja repetida na próxima execução.
+Para coletar apenas métricas da VM, use `-e simulator_metrics_enabled=false`.
+Em uma instalação legada, o parâmetro `-e simulator_compose_dir=/opt/simulator`
+em `monitoring.yml` aciona a atualização isolada do gerador com
+`compose.metrics.yml`. A atualização completa usa `setup.yml` e grava as
+variáveis de publicação no `.env` do projeto Compose.
 
-Essa opção reconstrói e reinicia o gerador na primeira aplicação. Para manter a
-opção nas aplicações seguintes, configure `simulator_metrics_enabled` e
-`simulator_compose_dir` em `infra/ansible/group_vars/all/monitoring.yml`, ou repita
-os parâmetros. Nas operações manuais posteriores no gerador, mantenha os dois
-arquivos Compose:
-
-```bash
-# Na geradora, dentro de /opt/simulator:
-docker compose -f docker-compose.yml -f compose.metrics.yml ps
-```
+## Métricas da aplicação
 
 | Métrica | Significado |
 | --- | --- |
@@ -170,8 +139,8 @@ por padrão a partir do host KVM; inclua outros clientes na allowlist se preciso
 
 No Grafana, abra **Dashboards → Infraestrutura → Monitoramento — VM Geradora**.
 O filtro **Instância** inclui todos os hosts do grupo `simulator`, mesmo quando
-estão DOWN. Os painéis da aplicação acompanham a seleção da VM por uma variável
-oculta; permanecem sem dados enquanto a instrumentação opcional não for aplicada.
+estão DOWN. Os painéis da aplicação exibem as métricas do gerador da VM
+selecionada.
 
 O dashboard tem 20 painéis/linhas: CPU, RAM em percentual e bytes, RAM disponível,
 disco por ponto de montagem, espaço disponível, rede recebida/transmitida, uptime,
@@ -276,7 +245,8 @@ os testes. Sem ele, apenas o teste das consultas é marcado como ignorado.
 
 Modificados:
 
-- `infra/ansible/playbooks/setup.yml`: template Compose compartilhado e importação do monitoramento.
+- `infra/ansible/playbooks/setup.yml`: atualização de pacotes, implantação do simulador e monitoramento.
+- `infra/ansible/roles/simulator/`: envio dos arquivos, execução do Compose e verificação da API.
 - `simulator/stream_generator.py`, `requirements.txt`, `docker-compose.yml`: instrumentação e publicação configurável.
 - `README.md` e `monitoring/README.md`: estado, implantação e operação.
 

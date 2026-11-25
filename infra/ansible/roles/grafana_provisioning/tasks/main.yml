@@ -25,18 +25,6 @@
   register: grafana_existing_sources
   changed_when: false
 
-- name: Criar diretórios adicionais de provisioning
-  ansible.builtin.file:
-    path: "/opt/monitoring/grafana/{{ item }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-  loop:
-    - provisioning/datasources
-    - provisioning/dashboards
-    - dashboards
-
 - name: Provisionar fonte Prometheus sem remover fontes existentes
   ansible.builtin.template:
     src: prometheus.yml.j2
@@ -64,23 +52,6 @@
     owner: root
     group: root
     mode: "0644"
-
-- name: Adicionar mounts ao Compose mantendo imagem, senha e volume
-  ansible.builtin.template:
-    src: "{{ playbook_dir }}/../templates/monitoring-compose.yml.j2"
-    dest: /opt/monitoring/compose.yml
-    owner: root
-    group: root
-    mode: "0644"
-    backup: true
-
-- name: Aplicar Compose sem baixar novamente a imagem existente
-  ansible.builtin.command:
-    argv: [docker, compose, --ansi, never, --project-directory, /opt/monitoring, up, -d, --pull, missing, grafana]
-  register: grafana_provisioning_compose
-  changed_when: >-
-    (grafana_provisioning_compose.stdout ~ grafana_provisioning_compose.stderr)
-    is search('Creating|Created|Starting|Started|Recreate|Pulling|Pulled')
 
 - name: Aplicar provisioning antes das verificações
   ansible.builtin.meta: flush_handlers

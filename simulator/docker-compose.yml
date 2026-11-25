@@ -12,6 +12,12 @@ services:
       - "5432:5432" # Exposto para acesso de ETL/BigData se necessário
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
 
   # Serviço da API Flask para envio dos dados
   api:
@@ -24,7 +30,14 @@ services:
     environment:
       - DATABASE_URL=postgresql://user:password@db:5432/varejo_db
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "from urllib.request import urlopen; urlopen('http://127.0.0.1:5000/health', timeout=3).close()"]
+      interval: 5s
+      timeout: 4s
+      retries: 12
+      start_period: 10s
 
   # Serviço do Gerador Contínuo de Dados
   generator:
@@ -41,7 +54,8 @@ services:
     ports:
       - "${SIMULATOR_METRICS_BIND:-127.0.0.1}:${SIMULATOR_METRICS_PORT:-8000}:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
   
   adminer:
     image: adminer
@@ -50,7 +64,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

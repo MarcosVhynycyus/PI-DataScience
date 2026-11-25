@@ -1,0 +1,17 @@
+---
+simulator_source_dir: "{{ playbook_dir }}/../../../simulator"
+simulator_compose_dir: "{{ simulator_existing_paths | first | default('/opt/simulator') }}"
+simulator_compose_project: "{{ simulator_existing_projects | first | default(simulator_compose_dir | basename) }}"
+simulator_compose_command:
+  - docker
+  - compose
+  - --ansi
+  - never
+  - --project-directory
+  - "{{ simulator_compose_dir }}"
+  - --project-name
+  - "{{ simulator_compose_project }}"
+  - --env-file
+  - "{{ simulator_compose_dir }}/.env"
+  - --file
+  - "{{ simulator_compose_dir }}/docker-compose.yml"
